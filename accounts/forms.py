@@ -1,0 +1,168 @@
+from django import forms
+from django.contrib.auth.forms import UserCreationForm, SetPasswordForm
+from .models import User
+
+class UserRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'Enter your email',
+    }))
+    first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'First name',
+    }))
+    last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'Last name',
+    }))
+    username = forms.CharField(max_length=150, required=True, widget=forms.TextInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'Username',
+    }))
+    password1 = forms.CharField(label='Password', widget=forms.PasswordInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'Password (minimum 8 characters)',
+    }))
+    password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput(attrs={
+        'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+        'placeholder': 'Confirm password',
+    }))
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'password1', 'password2']
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError('A user with that username already exists.')
+        return username
+
+    def clean_password1(self):
+        password1 = self.cleaned_data.get('password1')
+        if password1 and len(password1) < 8:
+            raise forms.ValidationError('Password must be at least 8 characters long.')
+        return password1
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        
+        # Check if user already exists
+        existing_user = User.objects.filter(email=email).first()
+        
+        if existing_user:
+            # Check if this email has PC invites
+            try:
+                from conference.models import PCInvite
+                pc_invites = PCInvite.objects.filter(email=email)
+                
+                if pc_invites.exists():
+                    # Check if any invites are pending or accepted
+                    pending_invites = pc_invites.filter(status='pending')
+                    accepted_invites = pc_invites.filter(status='accepted')
+                    
+                    if pending_invites.exists():
+                        # User has pending invites - they should register to accept them
+                        conference_names = [invite.conference.name for invite in pending_invites]
+                        conferences_text = ', '.join(conference_names)
+                        raise forms.ValidationError(
+                            f'This email is already registered. However, you have pending PC member invitations for: {conferences_text}. '
+                            f'Please try logging in with your existing account, or contact the conference chairs if you need help.'
+                        )
+                    elif accepted_invites.exists():
+                        # User has accepted invites - they should login
+                        conference_names = [invite.conference.name for invite in accepted_invites]
+                        conferences_text = ', '.join(conference_names)
+                        raise forms.ValidationError(
+                            f'This email is already registered. You have accepted PC member invitations for: {conferences_text}. '
+                            f'Please try logging in with your existing account, or use "Forgot Password" if you need to reset your password.'
+                        )
+                    else:
+                        raise forms.ValidationError('A user with that email already exists. Please try logging in instead.')
+                else:
+                    if existing_user.is_verified:
+                        raise forms.ValidationError('A user with that email already exists. Please try logging in instead.')
+                    else:
+                        # User exists but is not verified - show helpful message
+                        raise forms.ValidationError(
+                            'This email is already registered but not verified. Please try logging in with your existing account to complete verification, or contact support if you need help.'
+                        )
+            except ImportError:
+                # If conference app is not available, fall back to original error
+                if existing_user.is_verified:
+                    raise forms.ValidationError('A user with that email already exists. Please try logging in instead.')
+                else:
+                    # User exists but is not verified - show helpful message
+                    raise forms.ValidationError(
+                        'This email is already registered but not verified. Please try logging in with your existing account to complete verification, or contact support if you need help.'
+                    )
+        
+        # If no existing user, check if there are accepted PC invites that should allow registration
+        try:
+            from conference.models import PCInvite
+            accepted_invites = PCInvite.objects.filter(email=email, status='accepted')
+            if accepted_invites.exists():
+                # User has accepted invites but no account - allow registration
+                # Store this info in the form for later use
+                self.accepted_invites = accepted_invites
+        except ImportError:
+            pass
+            
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Check password validation first before checking username/email uniqueness
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError("The two password fields didn't match.")
+            
+            # Check password strength
+            if len(password1) < 8:
+                raise forms.ValidationError("Password must be at least 8 characters long.")
+            
+            if password1.isdigit():
+                raise forms.ValidationError("Password cannot be entirely numeric.")
+            
+            if password1.lower() in ['password', '123456', '12345678', 'qwerty', 'abc123', 'password123']:
+                raise forms.ValidationError("This password is too common. Please choose a stronger password.")
+        
+        return cleaned_data
+
+class PasswordResetEmailForm(forms.Form):
+    email = forms.EmailField(
+        label='Email', 
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+            'placeholder': 'Enter your email address',
+        })
+    )
+
+class PasswordResetOTPForm(forms.Form):
+    otp = forms.CharField(
+        label='OTP', 
+        max_length=6, 
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+            'placeholder': 'Enter 6-digit OTP',
+            'pattern': '[0-9]{6}',
+            'maxlength': '6',
+        })
+    )
+
+class SetNewPasswordForm(SetPasswordForm):
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(user, *args, **kwargs)
+        self.fields['new_password1'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+            'placeholder': 'Enter new password',
+        })
+        self.fields['new_password2'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400',
+            'placeholder': 'Confirm new password',
+        }) 

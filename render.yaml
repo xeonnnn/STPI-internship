@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: papersetu
+    env: python
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: python manage.py migrate --no-input && gunicorn conference_mgmt.wsgi:application --config gunicorn.conf.py
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: conference_mgmt.settings
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: papersetu2.onrender.com,*.onrender.com 

@@ -1,0 +1,45 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- Back Button -->
+    <a href="{% url 'homepage' %}" class="mb-6 w-max px-4 py-2 bg-gray-100 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center gap-2 transition-colors">
+        <i class="fas fa-arrow-left"></i> Back to Home
+    </a>
+
+    <main class="flex-1 flex flex-col items-center justify-center py-12">
+        <div class="bg-white rounded-2xl shadow-xl p-10 max-w-lg w-full text-center">
+            <h1 class="text-3xl font-bold text-blue-700 mb-2">{{ conference.acronym|default:conference.name }}</h1>
+            <p class="text-gray-600 mb-6">Choose your role to proceed in this conference</p>
+            {% if role_links %}
+                <div class="flex flex-col gap-4 mb-6">
+                    {% for role in role_links %}
+                        <a href="{{ role.url }}" class="w-full py-4 px-6 rounded-lg text-lg font-semibold shadow bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3 transition-colors">
+                            {% if role.role == 'chair' %}<i class="fas fa-crown"></i>{% endif %}
+                            {% if role.role == 'author' %}<i class="fas fa-user-edit"></i>{% endif %}
+                            {% if role.role == 'reviewer' %}<i class="fas fa-user-check"></i>{% endif %}
+                            {{ role.label }}
+                        </a>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'conference:author_papers' conference.id %}" class="w-full py-3 px-6 rounded-lg text-lg font-semibold shadow bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-3 transition-colors">
+                    <i class="fas fa-file-alt"></i> My Papers
+                </a>
+            {% else %}
+                <div class="bg-yellow-100 text-yellow-800 rounded-lg p-4 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>You do not have any roles in this conference.
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // Handle browser back button to redirect to homepage
+        window.addEventListener('popstate', function(event) {
+            window.location.href = "{% url 'homepage' %}";
+        });
+        
+        // Push current state to history so back button works
+        window.history.pushState({}, '', window.location.href);
+    </script>
+{% endblock %} 

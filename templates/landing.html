@@ -1,0 +1,483 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperSetu - Conference Management Reinvented</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <!-- AOS CSS for scroll effects -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+    <!-- Rellax JS for parallax effect -->
+    <script src="https://cdn.jsdelivr.net/npm/rellax@1.12.1/rellax.min.js"></script>
+    <style>
+      .glass {
+        background: rgba(255,255,255,0.7);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      .animated-bg {
+        position: absolute;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .blob {
+        filter: blur(32px);
+        opacity: 0.5;
+        animation: blobMove 18s infinite alternate ease-in-out;
+      }
+      @keyframes blobMove {
+        0% { transform: translateY(0) scale(1); }
+        100% { transform: translateY(-40px) scale(1.1); }
+      }
+      
+      /* Hide scrollbar for conference container */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      
+      /* Line clamp for conference titles */
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- Header Section -->
+  <header class="sticky top-0 z-50 bg-gray-50/90 backdrop-blur shadow-sm">
+    <div class="max-w-screen-xl mx-auto flex items-center justify-between px-6 py-3">
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2">
+        <img src="logo.png" alt="Logo" class="w-10 h-10 rounded-full shadow bg-white">
+        <span class="text-2xl font-bold text-indigo-800">PaperSetu</span>
+      </a>
+      <!-- Nav -->
+      <nav class="hidden md:flex items-center gap-4">
+        <a href="#" class="text-gray-700 hover:text-indigo-700">Home</a>
+        <a href="#features" class="text-gray-700 hover:text-indigo-700">Features</a>
+        <a href="#how" class="text-gray-700 hover:text-indigo-700">How it Works</a>
+        <a href="#contact" class="text-gray-700 hover:text-indigo-700">Contact</a>
+        <a href="/accounts/login/" class="ml-2 px-4 py-2 rounded-full bg-indigo-800 text-white shadow hover:bg-indigo-900">Login / Signup</a>
+      </nav>
+    </div>
+  </header>
+  
+
+    <!-- Hero Section -->
+    <section class="w-full bg-white min-h-screen flex items-center py-0" data-aos="fade-up">
+
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between px-4 gap-10 w-full h-full">
+      <div class="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-8">
+        <h1 class="text-3xl md:text-5xl font-extrabold text-indigo-800 leading-tight">
+          Manage Your Research Conferences with Ease
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-700 max-w-2xl">
+          PaperSetu streamlines submissions, reviews, and collaboration for every conference role—all in one place.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-6 mt-4">
+          <a href="/accounts/login/"
+            class="primary-btn bg-white text-indigo-800 border-2 border-indigo-800 font-semibold rounded-full px-12 py-4 text-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-110 hover:bg-indigo-800 hover:text-white hover:shadow-2xl hover:border-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+            Get Started
+          </a>
+          <a href="/login"
+            class="secondary-btn bg-white text-indigo-800 border-2 border-indigo-800 font-semibold rounded-full px-12 py-4 text-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-110 hover:bg-indigo-800 hover:text-white hover:shadow-2xl hover:border-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+            Create Conference
+          </a>
+        </div>
+      </div>
+      <div class="flex-1 flex justify-center items-center mt-10 md:mt-0">
+        <!-- Hero Image Slider Start -->
+        <div class="w-full max-w-xl mx-auto rellax" data-rellax-speed="3" data-rellax-xs-speed="1" data-rellax-mobile-speed="1">
+          <div class="swiper hero-swiper rounded-2xl overflow-hidden shadow-xl border-2 border-blue-400/30">
+            <div class="swiper-wrapper">
+              <!-- Slide 1 -->
+              <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=800&q=80" alt="Conference Presentation" class="w-full h-96 object-cover" />
+              </div>
+              <!-- Slide 2 -->
+              <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80" alt="Conference Hall" class="w-full h-96 object-cover" />
+              </div>
+              <!-- Slide 3 -->
+              <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80" alt="Research Collaboration" class="w-full h-96 object-cover" />
+              </div>
+            </div>
+            <!-- Pagination Dots -->
+            <div class="swiper-pagination mt-4"></div>
+          </div>
+        </div>
+        <!-- Hero Image Slider End -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Available Conferences Section -->
+  <section class="w-full bg-gray-50 py-16 relative z-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold text-indigo-800 mb-4">
+          Available Conferences
+        </h2>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+          Discover and join upcoming conferences in your field of research
+        </p>
+      </div>
+      
+      {% if conferences %}
+      <div class="relative">
+        <!-- Left Arrow -->
+        <button id="prevBtn" class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 hidden md:block">
+          <svg class="w-6 h-6 text-indigo-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        
+        <!-- Right Arrow -->
+        <button id="nextBtn" class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 hidden md:block">
+          <svg class="w-6 h-6 text-indigo-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+        
+        <!-- Conference Cards Container -->
+        <div id="conferenceContainer" class="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 py-4">
+          {% for conference in conferences %}
+          <div class="conference-card flex-shrink-0 w-72 md:w-80 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full 
+                  {% if conference.display_status == 'ongoing' or conference.status == 'live' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                  {% if conference.display_status == 'ongoing' %}Ongoing{% elif conference.display_status %}{{ conference.display_status|title }}{% else %}{{ conference.status|title }}{% endif %}
+                </span>
+                <span class="text-sm text-gray-500">{{ conference.primary_area }}</span>
+              </div>
+              
+              <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{{ conference.name }}</h3>
+              
+              {% if conference.acronym %}
+              <p class="text-sm text-indigo-600 font-semibold mb-3">{{ conference.acronym }}</p>
+              {% endif %}
+              
+              <div class="space-y-2 mb-4">
+                {% if conference.venue %}
+                <div class="flex items-center text-sm text-gray-600">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  {{ conference.venue }}{% if conference.city %}, {{ conference.city }}{% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center text-sm text-gray-600">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  {{ conference.start_date|date:"M d" }} - {{ conference.end_date|date:"M d, Y" }}
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <a href="/conference/browse/?q={{ conference.name|urlencode }}" 
+                   class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold transition-colors">
+                  Learn More →
+                </a>
+                <a href="{% url 'conference:join_conference_redirect' conference.id %}" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                  Join Conference
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <!-- Search All Conferences Button -->
+      <div class="text-center mt-8">
+        <a href="/conference/browse/" 
+           class="inline-flex items-center px-8 py-4 bg-indigo-800 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Browse All Conferences
+        </a>
+      </div>
+      {% else %}
+      <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Conferences Available</h3>
+        <p class="text-gray-500">Check back later for upcoming conferences</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Features Section -->
+    <section id="features" class="w-full bg-white/80 py-20 relative z-10">
+      <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-3xl md:text-4xl font-bold text-indigo-800 text-center mb-12">
+          Key Features
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <!-- Feature Cards (unchanged, glass effect added) -->
+          <div class="feature-card p-8 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-2xl glass border border-blue-100 rounded-2xl shadow">
+            <svg class="mb-4 text-indigo-800" width="48" height="48" fill="none" viewBox="0 0 24 24">
+              <path d="M4 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 10h6M9 14h6M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-indigo-800 mb-2">Easy Paper Submission</h3>
+            <p class="text-gray-700">Submit your research papers in just a few clicks with our intuitive upload and form system.</p>
+          </div>
+          <div class="feature-card p-8 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-2xl glass border border-blue-100 rounded-2xl shadow">
+            <svg class="mb-4 text-indigo-800" width="48" height="48" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 12l2 2 4-4" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-indigo-800 mb-2">Smooth Reviewing Process</h3>
+            <p class="text-gray-700">Reviewers can easily access, annotate, and submit feedback for assigned papers.</p>
+          </div>
+          <div class="feature-card p-8 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-2xl glass border border-blue-100 rounded-2xl shadow">
+            <svg class="mb-4 text-indigo-800" width="48" height="48" fill="none" viewBox="0 0 24 24">
+              <rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 12h8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-indigo-800 mb-2">Role-Based Dashboard</h3>
+            <p class="text-gray-700">Personalized dashboards for Chairs, Reviewers, and Authors to manage their tasks efficiently.</p>
+          </div>
+          <div class="feature-card p-8 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-2xl glass border border-blue-100 rounded-2xl shadow">
+            <svg class="mb-4 text-indigo-800" width="48" height="48" fill="none" viewBox="0 0 24 24">
+              <path d="M12 20v-6M12 14l-3-3m3 3l3-3M4 4h16v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="2"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-indigo-800 mb-2">Automated Scoring System</h3>
+            <p class="text-gray-700">Scores and ranks papers automatically based on reviewer input and configurable criteria.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it Works Section (unchanged, glass effect added) -->
+    <section id="how" class="w-full bg-white/80 py-7 relative z-10">
+      <div class="max-w-5xl mx-auto px-4 pt-0 pb-0">
+        <h2 class="text-3xl md:text-4xl font-bold text-indigo-800 text-center mb-12">
+          How It Works
+        </h2>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-10">
+          <div class="flex-1 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-xl glass bg-white rounded-2xl p-8 border border-blue-100 shadow">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+              <span class="text-2xl font-bold text-indigo-800">1</span>
+            </div>
+            <svg class="mb-4 text-indigo-800" width="36" height="36" fill="none" viewBox="0 0 24 24">
+              <path d="M4 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 10h6M9 14h6M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-indigo-800 mb-2">Submit Your Paper</h3>
+            <p class="text-gray-700">Authors upload their research papers using our simple submission form.</p>
+          </div>
+          <div class="flex-1 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-xl glass bg-white rounded-2xl p-8 border border-blue-100 shadow">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+              <span class="text-2xl font-bold text-indigo-800">2</span>
+            </div>
+            <svg class="mb-4 text-indigo-800" width="36" height="36" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 12l2 2 4-4" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-indigo-800 mb-2">Peer Review</h3>
+            <p class="text-gray-700">Reviewers are assigned and provide feedback and scores for each submission.</p>
+          </div>
+          <div class="flex-1 flex flex-col items-center text-center transition hover:scale-105 hover:shadow-xl glass bg-white rounded-2xl p-8 border border-blue-100 shadow">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+              <span class="text-2xl font-bold text-indigo-800">3</span>
+            </div>
+            <svg class="mb-4 text-indigo-800" width="36" height="36" fill="none" viewBox="0 0 24 24">
+              <rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 12h8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-indigo-800 mb-2">Decision & Dashboard</h3>
+            <p class="text-gray-700">Chairs make decisions and all users track progress in their personalized dashboard.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials Section (unchanged, glass effect added) -->
+    <section id="testimonials" class="w-full bg-white/80 py-8 relative z-10 mt-20">
+      <div class="max-w-5xl mx-auto px-4 mt-0 mb-0 pt-0">
+        <h2 class="text-3xl md:text-4xl font-bold text-indigo-800 text-center mb-12">
+          What Our Users Say
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="bg-gray-50 glass border border-blue-100 rounded-2xl p-8 shadow transition hover:scale-105 hover:shadow-xl flex flex-col items-center text-center">
+            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User 1" class="w-16 h-16 rounded-full mb-4 shadow">
+            <div class="text-lg text-gray-900 font-semibold mb-1">Dr. Arjun Mehta</div>
+            <div class="text-blue-500 text-sm mb-2">Conference Chair</div>
+            <p class="text-gray-700 italic">“PaperSetu made managing our conference submissions and reviews effortless. The dashboard is a game changer!”</p>
+          </div>
+          <div class="bg-gray-50 glass border border-blue-100 rounded-2xl p-8 shadow transition hover:scale-105 hover:shadow-xl flex flex-col items-center text-center">
+            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User 2" class="w-16 h-16 rounded-full mb-4 shadow">
+            <div class="text-lg text-gray-900 font-semibold mb-1">Prof. Sara Lee</div>
+            <div class="text-blue-500 text-sm mb-2">Reviewer</div>
+            <p class="text-gray-700 italic">“The reviewing process is so smooth and intuitive. I love the role-based dashboard and notifications.”</p>
+          </div>
+          <div class="bg-gray-50 glass border border-blue-100 rounded-2xl p-8 shadow transition hover:scale-105 hover:shadow-xl flex flex-col items-center text-center md:col-span-2">
+            <img src="https://randomuser.me/api/portraits/men/65.jpg" alt="User 3" class="w-16 h-16 rounded-full mb-4 shadow">
+            <div class="text-lg text-gray-900 font-semibold mb-1">Ravi Kumar</div>
+            <div class="text-blue-500 text-sm mb-2">Author</div>
+            <p class="text-gray-700 italic">“Submitting my paper was quick and easy. The automated scoring system gave me instant feedback!”</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+   
+  </main>
+  <!-- Footer (unchanged) -->
+  <footer class="w-full bg-gray-900 text-gray-200 py-10 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-8">
+      <div class="flex items-center gap-3 mb-6 md:mb-0">
+        <img src="{% static 'images/LOGO BG.png' %}" alt="PaperSetu Logo" class="w-10 h-10 rounded-full bg-white shadow">
+        <span class="text-xl font-bold text-white">PaperSetu</span>
+      </div>
+      <div class="flex flex-col md:flex-row gap-4 md:gap-8 items-center">
+        <a href="#about" class="hover:text-yellow-400 transition">About</a>
+        <a href="#privacy" class="hover:text-yellow-400 transition">Privacy</a>
+        <a href="#terms" class="hover:text-yellow-400 transition">Terms</a>
+        <div class="flex gap-3 mt-2 md:mt-0">
+          <a href="#" aria-label="Twitter" class="hover:text-blue-400 transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22.46 6c-.77.35-1.6.59-2.47.7a4.3 4.3 0 0 0 1.88-2.37 8.59 8.59 0 0 1-2.72 1.04A4.28 4.28 0 0 0 16.11 4c-2.37 0-4.29 1.92-4.29 4.29 0 .34.04.67.11.99C7.69 9.13 4.07 7.38 1.64 4.7c-.37.64-.58 1.39-.58 2.19 0 1.51.77 2.84 1.95 3.62-.72-.02-1.39-.22-1.98-.55v.06c0 2.11 1.5 3.87 3.5 4.27-.36.1-.74.16-1.13.16-.28 0-.54-.03-.8-.08.54 1.7 2.12 2.94 3.99 2.97A8.6 8.6 0 0 1 2 19.54a12.13 12.13 0 0 0 6.56 1.92c7.88 0 12.2-6.53 12.2-12.2 0-.19 0-.37-.01-.56A8.7 8.7 0 0 0 24 4.59a8.48 8.48 0 0 1-2.54.7z"/></svg>
+          </a>
+          <a href="#" aria-label="LinkedIn" class="hover:text-blue-400 transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-9h3v9zm-1.5-10.29c-.97 0-1.75-.79-1.75-1.75s.78-1.75 1.75-1.75 1.75.79 1.75 1.75-.78 1.75-1.75 1.75zm13.5 10.29h-3v-4.5c0-1.08-.02-2.47-1.5-2.47-1.5 0-1.73 1.17-1.73 2.39v4.58h-3v-9h2.89v1.23h.04c.4-.75 1.38-1.54 2.84-1.54 3.04 0 3.6 2 3.6 4.59v4.72z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="mt-8 text-center text-gray-400 text-sm">
+      &copy; 2024 PaperSetu. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- Swiper JS -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    const heroSwiper = new Swiper('.hero-swiper', {
+      loop: true,
+      autoplay: {
+        delay: 3500,
+        disableOnInteraction: false,
+      },
+      speed: 700,
+      pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+      },
+      grabCursor: true,
+      slidesPerView: 1,
+      spaceBetween: 0,
+    });
+    AOS.init({
+      duration: 900,
+      once: true,
+      offset: 60,
+      easing: 'ease-in-out',
+    });
+    new Rellax('.rellax', {
+      center: false,
+      wrapper: null,
+      round: true,
+      vertical: true,
+      horizontal: false
+    });
+    // Conference carousel functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const conferenceContainer = document.getElementById('conferenceContainer');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      
+      if (conferenceContainer && prevBtn && nextBtn) {
+        console.log('Conference carousel elements found');
+        
+        // Responsive scroll amount based on screen size
+        const getScrollAmount = () => {
+          return window.innerWidth < 768 ? 288 : 320; // w-72 + gap vs w-80 + gap
+        };
+        let scrollAmount = getScrollAmount();
+        
+        // Update scroll amount on window resize
+        window.addEventListener('resize', () => {
+          scrollAmount = getScrollAmount();
+        });
+        
+        prevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Previous button clicked');
+          conferenceContainer.scrollBy({
+            left: -scrollAmount,
+            behavior: 'smooth'
+          });
+        });
+        
+        nextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Next button clicked');
+          conferenceContainer.scrollBy({
+            left: scrollAmount,
+            behavior: 'smooth'
+          });
+        });
+        
+        // Show/hide arrows based on scroll position
+        conferenceContainer.addEventListener('scroll', () => {
+          const isAtStart = conferenceContainer.scrollLeft === 0;
+          const isAtEnd = conferenceContainer.scrollLeft + conferenceContainer.clientWidth >= conferenceContainer.scrollWidth;
+          
+          prevBtn.style.opacity = isAtStart ? '0.5' : '1';
+          prevBtn.style.pointerEvents = isAtStart ? 'none' : 'auto';
+          
+          nextBtn.style.opacity = isAtEnd ? '0.5' : '1';
+          nextBtn.style.pointerEvents = isAtEnd ? 'none' : 'auto';
+        });
+        
+        // Initial state
+        prevBtn.style.opacity = '0.5';
+        prevBtn.style.pointerEvents = 'none';
+      } else {
+        console.log('Conference carousel elements not found:', {
+          container: !!conferenceContainer,
+          prevBtn: !!prevBtn,
+          nextBtn: !!nextBtn
+        });
+      }
+    });
+  </script>
+  <style>
+    @keyframes bgZoom {
+      0% { transform: scale(1);}
+      100% { transform: scale(1.05);}
+    }
+    .bg-animate {
+      animation: bgZoom 20s ease-in-out infinite alternate;
+    }
+  </style>
+</body>
+</html> 

@@ -1,0 +1,21 @@
+{% extends 'dashboard/dashboard.html' %}
+{% block content %}
+<div class="bg-white rounded shadow p-6 max-w-lg mx-auto mt-8">
+    <h1 class="text-2xl font-bold mb-4 text-blue-700">Review Request for: {{ invite.paper.title }}</h1>
+    <div class="mb-4">
+        <div><span class="font-semibold">Conference:</span> {{ invite.paper.conference.name }}</div>
+        <div><span class="font-semibold">Assigned by:</span> {{ invite.invited_by.get_full_name|default:invite.invited_by.username }}</div>
+        <div><span class="font-semibold">Status:</span> <span class="px-2 py-1 rounded text-xs {% if invite.status == 'accepted' %}bg-green-100 text-green-800{% elif invite.status == 'declined' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ invite.status|title }}</span></div>
+    </div>
+    {% if invite.status == 'invited' %}
+    <form method="post">
+        {% csrf_token %}
+        <button name="decision" value="accepted" class="bg-green-600 text-white px-4 py-2 rounded mr-2 hover:bg-green-700">Accept</button>
+        <button name="decision" value="declined" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Reject</button>
+    </form>
+    {% else %}
+    <div class="text-gray-500 mt-4">You have already responded to this request.</div>
+    {% endif %}
+    <a href="{% url 'conference:subreviewer_dashboard' invite.paper.conference.id %}" class="inline-block mt-6 text-blue-600 hover:underline">Back to Dashboard</a>
+</div>
+{% endblock %} 

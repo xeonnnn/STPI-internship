@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - PaperSetu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center" style="background: radial-gradient(ellipse at 60% 40%, #b7c9e9 60%, #e6ecfa 100%);">
+    <div class="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md flex flex-col items-center">
+        <h2 class="text-2xl font-bold text-indigo-800 mb-4">Verify Your Email</h2>
+        <div class="w-full">
+            <p class="mb-6 text-gray-600 text-center">Enter the OTP sent to your email address to activate your account.</p>
+            <form method="post" class="w-full space-y-4" id="otp-form">
+                {% csrf_token %}
+                <div class="flex justify-center gap-2" id="otp-boxes">
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                  <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-12 text-center text-2xl border-2 border-gray-300 rounded focus:border-indigo-800 focus:ring-0 transition" required>
+                </div>
+                <input type="hidden" name="otp" id="otp-hidden">
+                <button type="submit"
+                    class="w-full bg-indigo-800 text-white font-semibold py-2 rounded-lg shadow hover:bg-indigo-900 transition focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2">
+                    Verify
+                </button>
+            </form>
+            <form method="post" class="w-full mt-2">
+                {% csrf_token %}
+                <button id="resend-otp-btn" type="submit" name="resend_otp"
+                    class="w-full bg-white border border-indigo-800 text-indigo-800 font-semibold py-2 rounded-lg shadow hover:bg-indigo-800 hover:text-white transition mt-2" disabled>
+                    Resend OTP <span id="timer-text">(30s)</span>
+                </button>
+            </form>
+
+            {% if messages %}
+                <div class="w-full mt-4">
+                    {% for message in messages %}
+                        <p class="text-center text-red-500">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+      // Timer for resend OTP
+      let timer = 30;
+      const resendBtn = document.getElementById('resend-otp-btn');
+      const timerText = document.getElementById('timer-text');
+      resendBtn.disabled = true;
+      const interval = setInterval(() => {
+        timer--;
+        timerText.textContent = `(${timer}s)`;
+        if (timer <= 0) {
+          resendBtn.disabled = false;
+          timerText.textContent = '';
+          clearInterval(interval);
+        }
+      }, 1000);
+
+      // OTP input logic
+      const otpInputs = document.querySelectorAll('.otp-input');
+      otpInputs[0].focus();
+      otpInputs.forEach((input, idx) => {
+        input.addEventListener('input', (e) => {
+          if (e.inputType === 'deleteContentBackward' && input.value === '' && idx > 0) {
+            otpInputs[idx-1].focus();
+          } else if (input.value.length === 1 && idx < otpInputs.length - 1) {
+            otpInputs[idx+1].focus();
+          }
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && input.value === '' && idx > 0) {
+            otpInputs[idx-1].focus();
+          }
+        });
+      });
+      document.getElementById('otp-form').addEventListener('submit', function(e) {
+        let otp = '';
+        otpInputs.forEach(input => { otp += input.value; });
+        document.getElementById('otp-hidden').value = otp;
+      });
+    </script>
+</body>
+</html> 

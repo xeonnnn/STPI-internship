@@ -1,0 +1,294 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperSetu Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-100 flex flex-col">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="{% static 'images/LOGO BG.png' %}" alt="PaperSetu Logo" class="w-16 h-16 rounded-full shadow mr-2">
+                <span class="text-2xl font-bold text-indigo-800 tracking-tight">PaperSetu</span>
+            </div>
+            <div class="flex items-center space-x-8">
+                <a href="{% url 'dashboard:my_conferences' %}" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors font-semibold">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Conference</span>
+                </a>
+                <a href="/dashboard/" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors font-semibold">
+                    <i class="fas fa-file-alt"></i>
+                    <span>PaperSetu</span>
+                </a>
+                <a href="/news/" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors font-semibold">
+                    <i class="fas fa-newspaper"></i>
+                    <span>News</span>
+                </a>
+                <!-- Profile Dropdown -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors font-semibold">
+                        <i class="fas fa-user-circle text-2xl"></i>
+                        <span>{{ user.get_full_name|default:user.username }}</span>
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                        <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 break-all">
+                            {{ user.email }}
+                        </div>
+                        <a href="{% url 'dashboard:settings' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </a>
+                        <a href="/accounts/logout/" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Main Content -->
+    <main class="flex-grow max-w-[90%] mx-auto px-4 py-8">
+
+        <!-- Welcome Section -->
+        <section class="text-center mb-12">
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-blue-100 max-w-3xl mx-auto">
+                <h1 class="text-4xl md:text-5xl font-extrabold mb-4 text-blue-700 leading-tight">
+                    Welcome{% if user.is_authenticated %}, <span class="block text-5xl md:text-6xl text-blue-900 mt-2">{{ user.get_full_name|default:user.username }}</span>{% endif %}
+                </h1>
+                <p class="text-xl text-gray-600 mb-6">Your unified platform for academic conference management, submissions, and peer review.</p>
+                <div class="flex justify-center space-x-4">
+                    <div class="bg-blue-100 rounded-lg px-4 py-2">
+                        <span class="text-blue-800 font-semibold">Total Conferences: {{ user_conferences.count }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Quick Actions Section (moved up) -->
+        <section class="w-full flex flex-col md:flex-row gap-8 justify-center items-stretch mb-16">
+          <div class="flex-1 bg-white rounded-2xl shadow-xl p-8 border border-blue-100 flex flex-col items-center justify-center hover:scale-105 transition-all duration-300">
+            <div class="flex flex-col items-center">
+              <i class="fas fa-plus-circle text-5xl mb-4 text-blue-500"></i>
+              <h3 class="text-xl font-bold mb-2 text-blue-800">Create a New Conference</h3>
+              <p class="text-gray-600 mb-4">Start a new academic conference and manage everything in one place.</p>
+              <a href="/conference/create/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                <i class="fas fa-plus"></i> Create Conference
+              </a>
+            </div>
+          </div>
+          <div class="flex-1 bg-white rounded-2xl shadow-xl p-8 border border-blue-100 flex flex-col items-center justify-center hover:scale-105 transition-all duration-300">
+            <div class="flex flex-col items-center">
+              <i class="fas fa-search text-5xl mb-4 text-blue-500"></i>
+              <h3 class="text-xl font-bold mb-2 text-blue-800">Find Conferences</h3>
+              <p class="text-gray-600 mb-4">Browse and join conferences that match your interests and expertise.</p>
+              <a href="/conference/" class="bg-gradient-to-r from-green-400 to-blue-400 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                <i class="fas fa-search"></i> Find Conferences
+              </a>
+            </div>
+          </div>
+          <div class="flex-1 bg-white rounded-2xl shadow-xl p-8 border border-blue-100 flex flex-col items-center justify-center hover:scale-105 transition-all duration-300">
+            <div class="flex flex-col items-center">
+              <i class="fas fa-bolt text-5xl mb-4 text-blue-500"></i>
+              <h3 class="text-xl font-bold mb-2 text-blue-800">Quick Start Guide</h3>
+              <p class="text-gray-600 mb-4">Learn how to get the most out of PaperSetu with our quick start guide.</p>
+              <a href="/quick-start/" class="bg-blue-400 hover:bg-blue-500 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                <i class="fas fa-book-open"></i> Quick Start
+              </a>
+            </div>
+          </div>
+        </section>
+        <!-- Conference Search Section -->
+        <section class="mb-8">
+            <div class="w-full md:w-auto mb-8 flex justify-center">
+                <form id="conference-search-form" class="flex flex-col md:flex-row items-center gap-4 justify-center md:justify-end relative">
+                    <div class="relative w-full md:w-96">
+                        <input type="text" id="search-input" name="q" value="{{ search_query|default:'' }}" placeholder="Search conferences by name, acronym, venue, city, country, primary area, secondary area, or description..." class="w-full px-4 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 pr-10" />
+                        <button type="button" id="clear-search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 focus:outline-none" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </form>
+            </div>
+            <div id="search-results-container">
+                {% if search_results is not None %}
+                <div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 mb-8 max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold text-blue-700 mb-4">Search Results</h2>
+                    {% if search_results %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {% for conference in search_results %}
+                                <div class="bg-white rounded-lg shadow p-4 border border-blue-100 flex flex-col justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-blue-800 mb-1">{{ conference.acronym|default:conference.name|truncatechars:20 }}</h3>
+                                        <p class="text-blue-400 text-sm mb-1">{{ conference.name|truncatechars:40 }}</p>
+                                        <div class="text-gray-600 text-sm mb-1"><i class="fas fa-map-marker-alt mr-1"></i> {{ conference.venue|default:"TBD" }}{% if conference.city %}, {{ conference.city }}{% endif %}, {{ conference.country }}</div>
+                                        <div class="text-gray-600 text-sm mb-1"><i class="fas fa-tag mr-1"></i> {{ conference.theme_domain|default:conference.get_primary_area_display }}</div>
+                                        <div class="text-gray-600 text-sm mb-1"><i class="fas fa-calendar mr-1"></i> {{ conference.start_date|date:"M d" }} - {{ conference.end_date|date:"M d, Y" }}</div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="/conference/{{ conference.id }}/choose-role/" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">View</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-600">No conferences found matching your search.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </section>
+        <!-- My Conferences Section -->
+        <section class="mb-12">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-8">
+                <div class="text-center md:text-left">
+                    <h2 class="text-3xl font-extrabold text-blue-800 mb-2 tracking-tight">My Conferences</h2>
+                    <p class="text-gray-600">Manage your conference activities and submissions</p>
+                </div>
+            </div>
+            <div id="my-conferences-container">
+                {% if user_conferences %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {% for conference in user_conferences %}
+                            <div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 flex flex-col justify-between hover:scale-105 hover:shadow-2xl transition-all duration-300">
+                                <div>
+                                  <div class="flex justify-between items-center mb-3">
+                                      <div>
+                                          <h3 class="text-xl font-bold text-blue-800 mb-1">{{ conference.acronym|default:conference.name|truncatechars:20 }}</h3>
+                                          <p class="text-blue-400 text-sm">{{ conference.name|truncatechars:40 }}</p>
+                                      </div>
+                                      <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                          {% if conference.status == 'upcoming' %}bg-yellow-100 text-yellow-800
+                                          {% elif conference.status == 'live' %}bg-green-100 text-green-800
+                                          {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                          {{ conference.status|title }}
+                                      </span>
+                                  </div>
+                                  <div class="flex items-center text-blue-400 text-sm mb-2">
+                                      <i class="fas fa-map-marker-alt mr-2"></i>
+                                      <span>{{ conference.venue|default:"TBD" }}{% if conference.city %}, {{ conference.city }}{% endif %}</span>
+                                  </div>
+                                  <div class="mb-4">
+                                      <div class="flex items-center text-gray-600 text-sm mb-2">
+                                          <i class="fas fa-calendar mr-2"></i>
+                                          <span>{{ conference.start_date|date:"M d" }} - {{ conference.end_date|date:"M d, Y" }}</span>
+                                      </div>
+                                      <div class="flex items-center text-gray-600 text-sm mb-2">
+                                          <i class="fas fa-tag mr-2"></i>
+                                          <span>{{ conference.get_primary_area_display }}</span>
+                                      </div>
+                                  </div>
+                                  <div class="flex space-x-2 mt-auto">
+                                      {% if conference.chair.id == user.id or 'pc_member' in conference.user_roles or 'author' in conference.user_roles or 'subreviewer' in conference.user_roles %}
+                                          <a href="/conference/{{ conference.id }}/choose-role/" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center flex-1">Go</a>
+                                      {% endif %}
+                                  </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="bg-white rounded-xl shadow-lg p-12 text-center border border-blue-100 max-w-2xl mx-auto">
+                      <div class="mb-6">
+                          <i class="fas fa-calendar-times text-6xl text-gray-300"></i>
+                      </div>
+                      <h3 class="text-2xl font-bold text-blue-700 mb-4">No Conferences Yet</h3>
+                      <p class="text-gray-600 mb-6">You haven't joined any conferences yet. Start by creating a new conference or joining an existing one.</p>
+                      <div class="flex justify-center space-x-4">
+                          <a href="/conference/create/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                              <i class="fas fa-plus"></i> Create Conference
+                          </a>
+                          <a href="/conference/" class="bg-gradient-to-r from-green-400 to-blue-400 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-200 flex items-center gap-2">
+                              <i class="fas fa-search"></i> Find Conferences
+                          </a>
+                      </div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <script>
+        const searchInput = document.getElementById('search-input');
+        const clearBtn = document.getElementById('clear-search-btn');
+        const resultsContainer = document.getElementById('search-results-container');
+
+        searchInput.addEventListener('input', function() {
+            if (searchInput.value.length > 0) {
+                clearBtn.style.display = '';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        });
+
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            resultsContainer.innerHTML = '';
+            searchInput.focus();
+        });
+
+        document.getElementById('conference-search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchQuery = searchInput.value.trim();
+            if (!searchQuery) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            // Show loading state
+            resultsContainer.innerHTML = '<div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 mb-8 max-w-4xl mx-auto text-center"><i class="fas fa-spinner fa-spin text-2xl text-blue-600 mb-4"></i><p>Searching conferences...</p></div>';
+            
+            // Make AJAX request
+            fetch(`/conference/search/?q=${encodeURIComponent(searchQuery)}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Extract search results from the response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const searchResults = doc.getElementById('search-results-container');
+                
+                if (searchResults) {
+                    resultsContainer.innerHTML = searchResults.innerHTML;
+                } else {
+                    resultsContainer.innerHTML = '<div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 mb-8 max-w-4xl mx-auto text-center"><p class="text-gray-600">No conferences found matching your search.</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                resultsContainer.innerHTML = '<div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 mb-8 max-w-4xl mx-auto text-center"><p class="text-red-600">Error occurred while searching. Please try again.</p></div>';
+            });
+        });
+        </script>
+    </main>
+    <!-- Footer -->
+    <footer class="bg-gray-100 text-gray-800 py-8 mt-12 border-t border-gray-300">
+        <div class="container mx-auto px-4">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+              <span class="font-bold text-lg">PaperSetu</span> &copy; {% now "Y" %}
+            </div>
+            <div class="flex space-x-6">
+              <a href="#" class="hover:text-blue-600 transition-colors">About</a>
+              <a href="#" class="hover:text-blue-600 transition-colors">Support</a>
+              <a href="#" class="hover:text-blue-600 transition-colors">Privacy</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+      
+</body>
+</html> 
