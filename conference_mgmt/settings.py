@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'widget_tweaks',
     'accounts',
     'conference',
@@ -133,6 +134,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'conference_mgmt.wsgi.application'
+ASGI_APPLICATION = 'conference_mgmt.asgi.application'
 
 # Database configuration
 import os
@@ -175,6 +177,12 @@ else:
             }
         }
     }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 

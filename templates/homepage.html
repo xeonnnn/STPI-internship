@@ -166,12 +166,19 @@
                                           <h3 class="text-xl font-bold text-blue-800 mb-1">{{ conference.acronym|default:conference.name|truncatechars:20 }}</h3>
                                           <p class="text-blue-400 text-sm">{{ conference.name|truncatechars:40 }}</p>
                                       </div>
-                                      <span class="px-3 py-1 rounded-full text-xs font-semibold
-                                          {% if conference.status == 'upcoming' %}bg-yellow-100 text-yellow-800
-                                          {% elif conference.status == 'live' %}bg-green-100 text-green-800
-                                          {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                          {{ conference.status|title }}
-                                      </span>
+                                      <div class="flex flex-col items-end gap-2">
+                                          <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                              {% if conference.status == 'upcoming' %}bg-yellow-100 text-yellow-800
+                                              {% elif conference.status == 'live' %}bg-green-100 text-green-800
+                                              {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                              {{ conference.status|title }}
+                                          </span>
+                                          {% if not conference.is_approved %}
+                                              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                                                  Pending approval
+                                              </span>
+                                          {% endif %}
+                                      </div>
                                   </div>
                                   <div class="flex items-center text-blue-400 text-sm mb-2">
                                       <i class="fas fa-map-marker-alt mr-2"></i>
@@ -190,6 +197,7 @@
                                   <div class="flex space-x-2 mt-auto">
                                       {% if conference.chair.id == user.id or 'pc_member' in conference.user_roles or 'author' in conference.user_roles or 'subreviewer' in conference.user_roles %}
                                           <a href="/conference/{{ conference.id }}/choose-role/" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center flex-1">Go</a>
+                                          <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center flex-1">Room</a>
                                       {% endif %}
                                   </div>
                                 </div>
@@ -215,6 +223,48 @@
                 {% endif %}
             </div>
         </section>
+
+        {% if user.is_superuser and pending_conferences %}
+        <section class="mb-12">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-8">
+                <div class="text-center md:text-left">
+                    <h2 class="text-3xl font-extrabold text-blue-800 mb-2 tracking-tight">Pending Conference Requests</h2>
+                    <p class="text-gray-600">Review unapproved conferences waiting for admin action</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for conference in pending_conferences %}
+                    <div class="bg-white rounded-xl shadow-lg p-6 border border-orange-100 flex flex-col justify-between hover:scale-105 hover:shadow-2xl transition-all duration-300">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h3 class="text-xl font-bold text-blue-800 mb-1">{{ conference.acronym|default:conference.name|truncatechars:20 }}</h3>
+                                    <p class="text-blue-400 text-sm">{{ conference.name|truncatechars:40 }}</p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">Pending</span>
+                            </div>
+                            <div class="text-gray-600 text-sm mb-2">
+                                <i class="fas fa-user mr-2"></i>
+                                {{ conference.chair.get_full_name|default:conference.chair.username }}
+                            </div>
+                            <div class="text-gray-600 text-sm mb-2">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Submitted {{ conference.created_at|date:"M d, Y" }}
+                            </div>
+                            <div class="text-gray-600 text-sm mb-4">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                {{ conference.venue|default:"TBD" }}{% if conference.city %}, {{ conference.city }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-auto">
+                            <a href="/admin/conference/conference/{{ conference.id }}/change/" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Open in Admin</a>
+                            <a href="{% url 'dashboard:conference_submissions' conference.id %}" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">View Route</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
 
         <script>
         const searchInput = document.getElementById('search-input');

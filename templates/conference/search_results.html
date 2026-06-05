@@ -17,7 +17,10 @@
                 <div class="flex items-center text-gray-600 text-base mb-1"><i class="fas fa-tag mr-1"></i> {{ conference.theme_domain|default:conference.get_primary_area_display }}</div>
             </div>
             <span class="absolute top-6 right-6 bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full font-semibold text-base">{{ conference.status|title }}</span>
-            <a href="{% url 'conference:role_based_dashboard' conference.id %}" class="mt-8 w-full block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-full text-center text-lg transition">Go</a>
+            <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a href="{% url 'conference:role_based_dashboard' conference.id %}" class="w-full block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-full text-center text-lg transition">Go</a>
+                <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="w-full block bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-full text-center text-lg transition">Virtual Room</a>
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -38,7 +41,10 @@
                                 <div class="text-gray-600 text-sm mb-1"><i class="fas fa-calendar mr-1"></i> {{ conference.start_date|date:"M d" }} - {{ conference.end_date|date:"M d, Y" }}</div>
                             </div>
                             <div class="mt-2">
-                                <a href="/conference/{{ conference.id }}/choose-role/" class="glow-btn bg-white/80 border-2 border-blue-400 text-blue-800 font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">View</a>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <a href="/conference/{{ conference.id }}/choose-role/" class="glow-btn bg-white/80 border-2 border-blue-400 text-blue-800 font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">View</a>
+                                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="glow-btn bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Room</a>
+                                </div>
                             </div>
                         </div>
                     {% endfor %}

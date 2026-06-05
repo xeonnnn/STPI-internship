@@ -840,7 +840,7 @@ def conference_submissions(request, conf_id):
     ).first()
     is_pc_member = user_role is not None
     
-    if not (is_chair or is_pc_member):
+    if not (is_chair or is_pc_member or user.is_superuser or user.is_staff):
         return render(request, 'dashboard/forbidden.html', {
             'message': 'You do not have permission to view submissions for this conference.'
         })
@@ -2983,38 +2983,21 @@ class CreateConferenceView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('dashboard:conference_created', args=[self.object.id])
     
-    def post(self, request, *args, **kwargs):
-        """
-        Handle POST requests: instantiate a form instance with the passed
-        POST variables and then check if it's valid.
-        """
-        form = self.get_form()
-        
-        # Set the chair field to the current user
-        if form.is_bound:
-            form.data = form.data.copy()
-            form.data['chair'] = request.user.id
-        
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-    
     def form_valid(self, form):
         try:
-            conference = form.save(commit=False)
-            conference.chair = self.request.user
-            conference.status = 'upcoming'  # Set status to upcoming (valid choice)
-            conference.save()
+            form.instance.chair = self.request.user
+            form.instance.status = 'upcoming'  # Set status to upcoming (valid choice)
+
+            response = super().form_valid(form)
             
             # Create UserConferenceRole for the chair
             UserConferenceRole.objects.get_or_create(
                 user=self.request.user,
-                conference=conference,
+                conference=self.object,
                 role='chair'
             )
             
-            return super().form_valid(form)
+            return response
         except Exception as e:
             # Log the error for debugging
             print(f"Error creating conference: {e}")

@@ -21,7 +21,7 @@ def homepage(request):
     user_conferences = Conference.objects.filter(
         Q(chair=user) |
         Q(userconferencerole__user=user, userconferencerole__role__in=['author', 'pc_member', 'subreviewer'])
-    ).distinct().filter(is_approved=True)
+    ).distinct()
     # Add conferences where user is assigned as subreviewer via SubreviewerInvite (pending or accepted)
     subreviewer_confs = Conference.objects.filter(
         papers__subreviewer_invites__subreviewer=user,
@@ -29,6 +29,11 @@ def homepage(request):
     ).distinct().filter(is_approved=True)
     # Combine and deduplicate
     all_confs = (user_conferences | subreviewer_confs).distinct()
+
+    pending_conferences = Conference.objects.none()
+    if user.is_authenticated and user.is_superuser:
+        pending_conferences = Conference.objects.filter(is_approved=False).select_related('chair').order_by('-created_at')
+
     # Add role information to each conference
     for conference in all_confs:
         conference.user_roles = list(UserConferenceRole.objects.filter(
@@ -45,6 +50,7 @@ def homepage(request):
     context = {
         'user_conferences': all_confs,
         'live_upcoming_confs': live_upcoming_confs,
+        'pending_conferences': pending_conferences,
     }
     return render(request, 'homepage.html', context)
 

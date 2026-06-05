@@ -8,21 +8,53 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-lg">
-        <h2 class="text-2xl font-bold mb-6 text-blue-700">Join Conference</h2>
-        <div class="mb-4">
-            <div class="text-lg font-semibold">{{ conference.name }}</div>
-            <div class="text-gray-600 mb-2">{{ conference.description }}</div>
-            <div class="text-gray-500 mb-1">Dates: {{ conference.start_date }} to {{ conference.end_date }}</div>
-            <div class="text-gray-500 mb-1">Fee: ₹{{ conference.registration_fee }}</div>
-            <div class="text-gray-500 mb-1">Format: {{ conference.paper_format|upper }}</div>
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-blue-100">
+        <div class="flex items-start justify-between gap-4 mb-6">
+            <div>
+                <h2 class="text-3xl font-bold text-blue-800">Join Conference</h2>
+                <p class="text-gray-500 mt-1">Select the path you want to use for this conference.</p>
+            </div>
+            {% if virtual_room_state == 'live' %}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Live Room</span>
+            {% elif virtual_room_state == 'closed' %}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">Closed Room</span>
+            {% else %}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Scheduled Room</span>
+            {% endif %}
         </div>
+
+        <div class="grid gap-4 mb-6 md:grid-cols-[1.2fr_0.8fr]">
+            <div class="rounded-xl border border-gray-200 p-5 bg-gray-50">
+                <div class="text-xl font-semibold text-gray-900">{{ conference.name }}</div>
+                <div class="text-gray-600 mt-2">{{ conference.description }}</div>
+                <div class="text-gray-500 mt-3 text-sm">Dates: {{ conference.start_date }} to {{ conference.end_date }}</div>
+                <div class="text-gray-500 text-sm">Fee: ₹{{ conference.registration_fee }}</div>
+                <div class="text-gray-500 text-sm">Format: {{ conference.paper_format|upper }}</div>
+            </div>
+
+            <div class="rounded-xl border border-blue-200 p-5 bg-blue-50">
+                <div class="text-sm font-semibold uppercase tracking-wide text-blue-700 mb-2">Virtual room</div>
+                <p class="text-sm text-gray-700 mb-4">
+                    Open the live room for presentations, discussion, and remote participation.
+                </p>
+                {% if virtual_room_enabled %}
+                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 transition-colors">
+                        Join Virtual Room
+                    </a>
+                {% else %}
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        The virtual room is not live yet. You can still join the conference flow below.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
         {% if is_author %}
             <div class="text-green-600 font-semibold mb-4">You have already joined this conference as an author.</div>
         {% else %}
             <form method="post">
                 {% csrf_token %}
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Join as Author</button>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">Join as Author</button>
             </form>
         {% endif %}
     </div>
