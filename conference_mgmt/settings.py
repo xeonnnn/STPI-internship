@@ -90,6 +90,7 @@ LOGGING = {
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 INSTALLED_APPS = [
+    'daphne',
     'admin_interface',
     'colorfield',
     'django.contrib.admin',

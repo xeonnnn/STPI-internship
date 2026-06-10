@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from django.utils import timezone
 
 
 ROOM_STATE = defaultdict(lambda: {'participants': {}, 'chat': []})
@@ -97,6 +98,7 @@ class ConferenceRoomConsumer(AsyncJsonWebsocketConsumer):
             'participant_id': self.participant_id,
             'name': self.display_name,
             'message': (content.get('message') or '').strip(),
+            'timestamp': timezone.now().isoformat(),
         }
         if not chat_message['message']:
             return

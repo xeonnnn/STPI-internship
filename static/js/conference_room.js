@@ -13,11 +13,15 @@
     const statusBadge = document.getElementById('connection-status');
     const localVideo = document.getElementById('local-video');
     const remoteGrid = document.getElementById('remote-grid');
+    const remoteStageShell = document.getElementById('remote-stage-shell');
+    const localStageTile = document.getElementById('local-stage-tile');
+    const roomClock = document.getElementById('room-clock');
     const participantList = document.getElementById('participant-list');
     const participantCount = document.getElementById('participant-count');
     const chatFeed = document.getElementById('chat-feed');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
+    const chatSubmitButton = document.getElementById('chat-submit-btn');
 
     const state = {
         socket: null,
@@ -42,22 +46,34 @@
 
     if (config.room_state === 'closed') {
         setStatus('This room has ended.', 'warning');
-        joinButton.textContent = 'Room Closed';
+        setButtonIcon(joinButton, 'fa-lock', 'Room closed');
         joinButton.disabled = true;
     }
 
     function setStatus(text, tone) {
-        statusBadge.textContent = text;
-        statusBadge.className = 'rounded-full px-3 py-1 text-xs font-semibold';
+        const statusText = text.replace(/\.$/, '');
+        statusBadge.innerHTML = `<span class="h-2 w-2 rounded-full"></span>${escapeHtml(statusText)}`;
+        statusBadge.className = 'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-bold uppercase';
+        const dot = statusBadge.querySelector('span');
         if (tone === 'error') {
-            statusBadge.classList.add('bg-rose-500/20', 'text-rose-200');
+            statusBadge.classList.add('border-rose-400/25', 'bg-rose-500/15', 'text-rose-200');
+            dot.className = 'h-2 w-2 rounded-full bg-rose-300';
         } else if (tone === 'warning') {
-            statusBadge.classList.add('bg-amber-400/20', 'text-amber-200');
+            statusBadge.classList.add('border-amber-300/25', 'bg-amber-400/15', 'text-amber-100');
+            dot.className = 'h-2 w-2 rounded-full bg-amber-300';
         } else if (tone === 'success') {
-            statusBadge.classList.add('bg-emerald-500/20', 'text-emerald-200');
+            statusBadge.classList.add('border-emerald-300/25', 'bg-emerald-400/15', 'text-emerald-100');
+            dot.className = 'h-2 w-2 rounded-full bg-emerald-300';
         } else {
-            statusBadge.classList.add('bg-slate-700', 'text-slate-100');
+            statusBadge.classList.add('border-zinc-500/25', 'bg-zinc-800', 'text-zinc-100');
+            dot.className = 'h-2 w-2 rounded-full bg-zinc-400';
         }
+    }
+
+    function setButtonIcon(button, iconClass, label) {
+        button.innerHTML = `<i class="fas ${iconClass}"></i>`;
+        button.setAttribute('aria-label', label);
+        button.dataset.tooltip = label;
     }
 
     function socketUrl() {
@@ -70,6 +86,11 @@
         micButton.disabled = !enabled;
         cameraButton.disabled = !enabled;
         shareButton.disabled = !enabled;
+        chatInput.disabled = !enabled;
+        if (chatSubmitButton) {
+            chatSubmitButton.disabled = !enabled;
+        }
+        chatInput.placeholder = enabled ? 'Type a message...' : 'Join the room to chat...';
     }
 
     function escapeHtml(value) {
@@ -81,19 +102,50 @@
             .replaceAll("'", '&#39;');
     }
 
+    function participantInitials(participant) {
+        const displayValue = participant.name || participant.username || 'Guest';
+        const words = displayValue.trim().split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            return `${words[0][0]}${words[1][0]}`.toUpperCase();
+        }
+        return displayValue.slice(0, 2).toUpperCase();
+    }
+
+    function formatTimestamp(value) {
+        const date = value ? new Date(value) : new Date();
+        if (Number.isNaN(date.getTime())) {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     function renderParticipants() {
         const list = Array.from(state.participants.values());
         participantCount.textContent = String(list.length);
+        if (!list.length) {
+            participantList.innerHTML = `
+                <div class="rounded-lg border border-dashed border-white/10 bg-zinc-950/50 px-4 py-5 text-center text-sm text-zinc-500">
+                    No participants yet
+                </div>
+            `;
+            return;
+        }
+
         participantList.innerHTML = list
             .map((participant) => {
                 const isSelf = participant.id === state.selfParticipantId;
                 return `
-                    <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                        <div>
-                            <div class="font-semibold text-white">${escapeHtml(participant.name)}</div>
-                            <div class="text-xs text-slate-400">@${escapeHtml(participant.username)}</div>
+                    <div class="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${isSelf ? 'bg-emerald-400 text-zinc-950' : 'bg-zinc-800 text-zinc-100'} text-sm font-black">
+                                ${escapeHtml(participantInitials(participant))}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="truncate font-semibold text-white">${escapeHtml(participant.name || 'Guest')}</div>
+                                <div class="truncate text-xs text-zinc-500">@${escapeHtml(participant.username || 'guest')}</div>
+                            </div>
                         </div>
-                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold ${isSelf ? 'bg-cyan-500/20 text-cyan-200' : 'bg-slate-700 text-slate-200'}">${isSelf ? 'You' : 'Guest'}</span>
+                        <span class="shrink-0 rounded-md px-2 py-1 text-[11px] font-bold ${isSelf ? 'bg-emerald-400/15 text-emerald-200' : 'bg-zinc-800 text-zinc-300'}">${isSelf ? 'You' : 'Guest'}</span>
                     </div>
                 `;
             })
@@ -101,16 +153,40 @@
     }
 
     function renderChat(message, isSelf = false) {
-        const bubbleClass = isSelf ? 'ml-auto bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-100';
-        const nameClass = isSelf ? 'text-cyan-200' : 'text-slate-400';
+        const bubbleClass = isSelf ? 'ml-auto bg-emerald-400 text-zinc-950' : 'mr-auto bg-zinc-800 text-zinc-100';
+        const metaClass = isSelf ? 'text-zinc-800/70' : 'text-zinc-400';
         const item = document.createElement('div');
-        item.className = `max-w-[85%] rounded-2xl px-4 py-3 ${bubbleClass}`;
+        item.className = `max-w-[88%] rounded-lg px-3 py-2 shadow-sm ${bubbleClass}`;
         item.innerHTML = `
-            <div class="text-[11px] font-semibold uppercase tracking-wide ${nameClass}">${escapeHtml(message.name)}</div>
-            <div class="mt-1 text-sm">${escapeHtml(message.message)}</div>
+            <div class="flex items-center justify-between gap-3 text-[11px] font-bold ${metaClass}">
+                <span class="truncate">${escapeHtml(message.name || 'Guest')}</span>
+                <time class="shrink-0">${escapeHtml(formatTimestamp(message.timestamp))}</time>
+            </div>
+            <div class="mt-1 break-words text-sm leading-5">${escapeHtml(message.message)}</div>
         `;
         chatFeed.appendChild(item);
         chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function syncStageEmptyState() {
+        const hasRemoteTiles = remoteGrid.children.length > 0;
+        if (remoteStageShell) {
+            remoteStageShell.classList.toggle('hidden', !hasRemoteTiles);
+            remoteStageShell.classList.toggle('grid', hasRemoteTiles);
+        }
+        if (localStageTile) {
+            localStageTile.classList.toggle('max-w-[1228px]', !hasRemoteTiles);
+            localStageTile.classList.toggle('absolute', hasRemoteTiles);
+            localStageTile.classList.toggle('right-4', hasRemoteTiles);
+            localStageTile.classList.toggle('bottom-28', hasRemoteTiles);
+            localStageTile.classList.toggle('z-30', hasRemoteTiles);
+            localStageTile.classList.toggle('h-32', hasRemoteTiles);
+            localStageTile.classList.toggle('w-52', hasRemoteTiles);
+            localStageTile.classList.toggle('sm:h-44', hasRemoteTiles);
+            localStageTile.classList.toggle('sm:w-72', hasRemoteTiles);
+            localStageTile.classList.toggle('ring-1', hasRemoteTiles);
+            localStageTile.classList.toggle('ring-white/15', hasRemoteTiles);
+        }
     }
 
     function ensureRemoteTile(peerId, label) {
@@ -121,15 +197,18 @@
 
         wrapper = document.createElement('div');
         wrapper.dataset.peerId = peerId;
-        wrapper.className = 'rounded-2xl border border-white/10 bg-black/30 p-3';
+        wrapper.className = 'relative h-full max-h-full w-full overflow-hidden rounded-[22px] bg-black shadow-2xl shadow-black/60';
         wrapper.innerHTML = `
-            <video autoplay playsinline class="h-56 w-full rounded-xl bg-black object-cover"></video>
-            <div class="mt-2 flex items-center justify-between text-sm">
-                <span class="font-semibold text-white">${escapeHtml(label)}</span>
-                <span class="text-slate-400">Remote</span>
+            <video autoplay playsinline class="h-full min-h-[280px] w-full bg-black object-cover"></video>
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">
+                <div class="inline-flex max-w-full items-center gap-2 rounded-lg bg-black/35 px-3 py-2 text-sm font-bold text-white backdrop-blur">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-black">${escapeHtml(participantInitials({ name: label }))}</span>
+                    <span class="truncate">${escapeHtml(label)}</span>
+                </div>
             </div>
         `;
         remoteGrid.appendChild(wrapper);
+        syncStageEmptyState();
         return wrapper.querySelector('video');
     }
 
@@ -138,6 +217,7 @@
         if (tile) {
             tile.remove();
         }
+        syncStageEmptyState();
     }
 
     function closePeer(peerId) {
@@ -292,7 +372,7 @@
 
         state.joining = true;
         joinButton.disabled = true;
-        setStatus('Requesting camera and microphone...', 'warning');
+        setStatus('Connecting', 'warning');
 
         try {
             state.localStream = await navigator.mediaDevices.getUserMedia({
@@ -304,20 +384,19 @@
 
             state.socket = new WebSocket(socketUrl());
             state.socket.onopen = () => {
-                setStatus('Connected to room.', 'success');
+                setStatus('Connected', 'success');
                 state.joined = true;
                 setControlState(true);
-                joinButton.textContent = 'Connected';
+                setButtonIcon(joinButton, 'fa-check', 'Connected');
                 joinButton.disabled = true;
-                state.socket.send(JSON.stringify({ type: 'room.sync' }));
             };
             state.socket.onclose = () => {
-                setStatus('Disconnected from room.', 'warning');
+                setStatus('Disconnected', 'error');
                 state.joined = false;
                 setControlState(false);
             };
             state.socket.onerror = () => {
-                setStatus('WebSocket connection failed.', 'error');
+                setStatus('Connection failed', 'error');
             };
             state.socket.onmessage = async (event) => {
                 const message = JSON.parse(event.data);
@@ -331,11 +410,12 @@
                         state.participants.set(participant.id, participant);
                     });
                     renderParticipants();
+                    chatFeed.innerHTML = '';
                     (message.chat || []).forEach((item) => renderChat(item, item.participant_id === state.selfParticipantId));
                     for (const participant of message.participants || []) {
                         createOffer(participant).catch((error) => console.error('Offer creation failed', error));
                     }
-                    setStatus('Ready to present.', 'success');
+                    setStatus('Connected', 'success');
                 } else if (message.type === 'participant.joined') {
                     handleParticipantJoined(message.participant);
                 } else if (message.type === 'participant.left') {
@@ -348,7 +428,7 @@
             };
         } catch (error) {
             console.error(error);
-            setStatus('Unable to access camera or microphone.', 'error');
+            setStatus('Camera or microphone blocked', 'error');
             joinButton.disabled = false;
         } finally {
             state.joining = false;
@@ -362,6 +442,7 @@
         state.peerConnections.clear();
         state.remoteStreams.clear();
         remoteGrid.innerHTML = '';
+        syncStageEmptyState();
 
         if (state.socket) {
             state.socket.close();
@@ -375,11 +456,14 @@
 
         state.joined = false;
         state.mediaReady = false;
+        state.participants.clear();
+        state.selfParticipantId = null;
         joinButton.disabled = false;
-        joinButton.textContent = 'Start & Join';
+        setButtonIcon(joinButton, 'fa-phone', 'Start and join');
         setControlState(false);
-        setStatus('Left the room.', 'warning');
+        setStatus('Disconnected', 'error');
         localVideo.srcObject = null;
+        renderParticipants();
     }
 
     function toggleMic() {
@@ -390,7 +474,13 @@
         state.localStream.getAudioTracks().forEach((track) => {
             track.enabled = state.micEnabled;
         });
-        micButton.textContent = state.micEnabled ? 'Mute' : 'Unmute';
+        micButton.classList.toggle('bg-rose-500', !state.micEnabled);
+        micButton.classList.toggle('border-rose-400/30', !state.micEnabled);
+        setButtonIcon(
+            micButton,
+            state.micEnabled ? 'fa-microphone' : 'fa-microphone-slash',
+            state.micEnabled ? 'Mute microphone' : 'Unmute microphone'
+        );
     }
 
     function toggleCamera() {
@@ -401,7 +491,20 @@
         state.localStream.getVideoTracks().forEach((track) => {
             track.enabled = state.cameraEnabled;
         });
-        cameraButton.textContent = state.cameraEnabled ? 'Camera Off' : 'Camera On';
+        cameraButton.classList.toggle('bg-rose-500', !state.cameraEnabled);
+        cameraButton.classList.toggle('border-rose-400/30', !state.cameraEnabled);
+        setButtonIcon(
+            cameraButton,
+            state.cameraEnabled ? 'fa-video' : 'fa-video-slash',
+            state.cameraEnabled ? 'Turn camera off' : 'Turn camera on'
+        );
+    }
+
+    function updateClock() {
+        if (!roomClock) {
+            return;
+        }
+        roomClock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     joinButton.addEventListener('click', () => {
@@ -433,6 +536,13 @@
     });
 
     renderParticipants();
+    syncStageEmptyState();
+    updateClock();
+    window.setInterval(updateClock, 30000);
     setControlState(false);
-    setStatus(config.room_state === 'live' ? 'Room is live.' : 'Waiting for the session to begin.', 'warning');
+    if (config.room_state === 'closed') {
+        setStatus('Room ended', 'warning');
+    } else {
+        setStatus(config.room_state === 'live' ? 'Disconnected' : 'Connecting', config.room_state === 'live' ? 'error' : 'warning');
+    }
 })();
