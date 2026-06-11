@@ -195,10 +195,16 @@
                    class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold transition-colors">
                   Learn More →
                 </a>
-                <a href="{% url 'conference:join_conference_redirect' conference.id %}" 
-                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-                  Join Conference
-                </a>
+                <div class="flex items-center gap-2">
+                  <a href="{% url 'conference:virtual_conference_room' conference.id %}" 
+                     class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    Virtual Room
+                  </a>
+                  <a href="{% url 'conference:join_conference_redirect' conference.id %}" 
+                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    Join Conference
+                  </a>
+                </div>
               </div>
             </div>
           </div>

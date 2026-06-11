@@ -177,8 +177,8 @@ class ConferenceAdmin(admin.ModelAdmin):
         review_count = Review.objects.filter(paper__conference=obj).count()
         
         # Get recent activity
-        recent_papers = obj.papers.order_by('-created_at')[:5]
-        recent_roles = obj.userconferencerole_set.order_by('-created_at')[:5]
+        recent_papers = obj.papers.order_by('-submitted_at')[:5]
+        recent_roles = obj.userconferencerole_set.order_by('-joined_at')[:5]
         
         stats_html = format_html(
             '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">'
@@ -213,7 +213,7 @@ class ConferenceAdmin(admin.ModelAdmin):
                         '</div>',
                         paper.title[:50] + "..." if len(paper.title) > 50 else paper.title,
                         paper.author.get_full_name() or paper.author.username,
-                        paper.created_at.strftime('%Y-%m-%d')
+                        paper.submitted_at.strftime('%Y-%m-%d')
                     )
             
             if recent_roles:
@@ -225,7 +225,7 @@ class ConferenceAdmin(admin.ModelAdmin):
                         '</div>',
                         role.user.get_full_name() or role.user.username,
                         role.get_role_display(),
-                        role.created_at.strftime('%Y-%m-%d')
+                        role.joined_at.strftime('%Y-%m-%d')
                     )
         
         return stats_html

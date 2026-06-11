@@ -26,11 +26,8 @@
                 <span class="text-2xl font-bold text-indigo-800">PaperSetu</span>
             </a>
             <!-- Nav -->
-            <nav class="hidden md:flex items-center gap-4">
-                <a href="/" class="text-gray-700 hover:text-indigo-700">Home</a>
-                <a href="/accounts/login/" class="px-4 py-2 rounded-full bg-indigo-800 text-white shadow hover:bg-indigo-900">Login / Signup</a>
-            </nav>
-        </div>
+                                        <a href="/conference/{{ conference.id }}/choose-role/" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Join</a>
+                                        <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Virtual Room</a>
     </header>
 
     <!-- Main Content -->

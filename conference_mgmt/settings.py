@@ -90,6 +90,7 @@ LOGGING = {
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 INSTALLED_APPS = [
+    'daphne',
     'admin_interface',
     'colorfield',
     'django.contrib.admin',
@@ -98,6 +99,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'widget_tweaks',
     'accounts',
     'conference',
@@ -133,6 +135,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'conference_mgmt.wsgi.application'
+ASGI_APPLICATION = 'conference_mgmt.asgi.application'
 
 # Database configuration
 import os
@@ -175,6 +178,12 @@ else:
             }
         }
     }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 

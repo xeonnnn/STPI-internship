@@ -142,6 +142,34 @@ def send_payment_request_email(author_email, paper):
         fail_silently=False,
     )
 
+
+def get_virtual_room_url(conference):
+    return reverse('conference:virtual_conference_room', args=[conference.id])
+
+
+def get_virtual_room_state(conference):
+    today = timezone.localdate()
+    if conference.status == 'live':
+        return 'live'
+    if conference.status == 'completed' or conference.end_date < today:
+        return 'closed'
+    return 'scheduled'
+
+
+def get_virtual_room_context(conference, user):
+    user_roles = list(
+        UserConferenceRole.objects.filter(user=user, conference=conference).values_list('role', flat=True)
+    )
+    if conference.chair == user and 'chair' not in user_roles:
+        user_roles.append('chair')
+
+    return {
+        'virtual_room_url': get_virtual_room_url(conference),
+        'virtual_room_state': get_virtual_room_state(conference),
+        'virtual_room_enabled': conference.is_approved and conference.status in ['upcoming', 'live'],
+        'virtual_room_roles': user_roles,
+    }
+
 class SubreviewerReviewForm(forms.Form):
     RATING_CHOICES = [
         (3, 'Strong Accept (+3)'),
@@ -305,13 +333,25 @@ def join_conference(request, invite_link):
             else:
                 continue
             role_links.append({'role': role, 'url': url, 'label': label})
-        context = {'conference': conference, 'role_links': role_links}
+        context = {
+            'conference': conference,
+            'role_links': role_links,
+            **get_virtual_room_context(conference, user),
+        }
         return render(request, 'conference/choose_role.html', context)
     # If user has no roles, allow join as author
     if request.method == 'POST':
         UserConferenceRole.objects.get_or_create(user=user, conference=conference, role='author')
         return redirect('conference:author_dashboard', conference_id=conference.id)
-    return render(request, 'conference/join_conference.html', {'conference': conference, 'is_author': is_author})
+    return render(
+        request,
+        'conference/join_conference.html',
+        {
+            'conference': conference,
+            'is_author': is_author,
+            **get_virtual_room_context(conference, user),
+        },
+    )
 
 @login_required
 def conferences_list(request):
@@ -366,10 +406,13 @@ def conferences_list(request):
         ).values_list('role', flat=True)
         if conference.chair == request.user and 'chair' not in conference.user_roles:
             conference.user_roles = list(conference.user_roles) + ['chair']
+        conference.virtual_room_url = get_virtual_room_url(conference)
+        conference.virtual_room_state = get_virtual_room_state(conference)
     
     context = {
         'conferences': conferences,
         'search_query': search_query,
+        'virtual_room_url_by_id': {conference.id: get_virtual_room_url(conference) for conference in conferences},
     }
     return render(request, 'conference/conferences_list.html', context)
 
@@ -420,6 +463,7 @@ def choose_conference_role(request, conference_id):
     context = {
         'conference': conference,
         'role_links': role_links,
+        **get_virtual_room_context(conference, user),
     }
     return render(request, 'conference/choose_role.html', context)
 
@@ -830,13 +874,54 @@ def browse_conferences(request):
             conference.display_status = 'ongoing'
         else:
             conference.display_status = conference.status
+        conference.virtual_room_url = get_virtual_room_url(conference)
+        conference.virtual_room_state = get_virtual_room_state(conference)
     
     context = {
         'search_results': conferences,
         'search_query': search_query,
+        'virtual_room_url_by_id': {conference.id: get_virtual_room_url(conference) for conference in conferences},
     }
     
     return render(request, 'conference/browse_conferences.html', context)
+
+
+@login_required
+def virtual_conference_room(request, conference_id):
+    conference = get_object_or_404(Conference, id=conference_id, is_approved=True)
+    room_state = get_virtual_room_state(conference)
+    user_roles = list(
+        UserConferenceRole.objects.filter(user=request.user, conference=conference).values_list('role', flat=True)
+    )
+    if conference.chair == request.user and 'chair' not in user_roles:
+        user_roles.append('chair')
+
+    room_config = {
+        'conference_id': conference.id,
+        'conference_name': conference.name,
+        'conference_acronym': conference.acronym or conference.name,
+        'room_state': room_state,
+        'room_url': get_virtual_room_url(conference),
+        'websocket_path': f'/ws/conference/{conference.id}/room/',
+        'ice_servers': getattr(settings, 'WEBRTC_ICE_SERVERS', [
+            {'urls': ['stun:stun.l.google.com:19302']}
+        ]),
+        'participant_name': request.user.get_full_name() or request.user.username,
+        'user_roles': user_roles,
+        'is_host': conference.chair == request.user,
+        'can_join_live': conference.status in ['upcoming', 'live'],
+    }
+
+    return render(
+        request,
+        'conference/virtual_conference_room.html',
+        {
+            'conference': conference,
+            'room_state': room_state,
+            'room_config': room_config,
+            'user_roles': user_roles,
+        },
+    )
 
 def join_conference_redirect(request, conference_id):
     """

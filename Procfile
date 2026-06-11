@@ -1,1 +1,1 @@
-web: gunicorn conference_mgmt.wsgi:application 
+web: daphne -b 0.0.0.0 -p $PORT conference_mgmt.asgi:application

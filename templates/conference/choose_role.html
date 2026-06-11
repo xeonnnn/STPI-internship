@@ -11,6 +11,26 @@
         <div class="bg-white rounded-2xl shadow-xl p-10 max-w-lg w-full text-center">
             <h1 class="text-3xl font-bold text-blue-700 mb-2">{{ conference.acronym|default:conference.name }}</h1>
             <p class="text-gray-600 mb-6">Choose your role to proceed in this conference</p>
+            <div class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-left">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Virtual room</p>
+                        <p class="text-sm text-gray-600">Remote participants can enter the live session from here.</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold {% if virtual_room_state == 'live' %}bg-green-100 text-green-800{% elif virtual_room_state == 'closed' %}bg-slate-100 text-slate-700{% else %}bg-amber-100 text-amber-800{% endif %}">
+                        {{ virtual_room_state|title }}
+                    </span>
+                </div>
+                {% if virtual_room_enabled %}
+                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white shadow hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-video"></i> Join Virtual Room
+                    </a>
+                {% else %}
+                    <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        The room is not live yet.
+                    </div>
+                {% endif %}
+            </div>
             {% if role_links %}
                 <div class="flex flex-col gap-4 mb-6">
                     {% for role in role_links %}
