@@ -22,8 +22,8 @@
                     </span>
                 </div>
                 {% if virtual_room_enabled %}
-                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white shadow hover:bg-indigo-700 transition-colors">
-                        <i class="fas fa-video"></i> Join Virtual Room
+                    <a href="{% url 'conference:conference_room' conference.id %}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white shadow hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-video"></i> Join Video Conference
                     </a>
                 {% else %}
                     <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

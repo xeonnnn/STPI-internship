@@ -38,8 +38,8 @@
                     Open the live room for presentations, discussion, and remote participation.
                 </p>
                 {% if virtual_room_enabled %}
-                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 transition-colors">
-                        Join Virtual Room
+                    <a href="{% url 'conference:conference_room' conference.id %}" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 transition-colors">
+                        Join Video Conference
                     </a>
                 {% else %}
                     <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
