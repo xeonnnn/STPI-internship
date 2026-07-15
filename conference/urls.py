@@ -27,5 +27,5 @@ urlpatterns += [
     path('payment/create-checkout-session/<int:paper_id>/', views.create_checkout_session, name='create_checkout_session'),
     path('payment/success/<int:paper_id>/', views.payment_success, name='payment_success'),
     path('payment/cancel/<int:paper_id>/', views.payment_cancel, name='payment_cancel'),
-    path('stripe/webhook/', views.stripe_webhook, name='stripe_webhook'),
+    path('razorpay/webhook/', views.razorpay_webhook, name='razorpay_webhook'),
 ] 
