@@ -45,7 +45,7 @@
                     <td class="px-4 py-2 whitespace-nowrap">
                         {% if paper.status == 'accepted' and not paper.is_paid %}
                             <button id="pay-btn-{{ paper.id }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded">Pay Now</button>
-                            <script src="https://js.stripe.com/v3/"></script>
+                            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
                             <script>
                             document.getElementById('pay-btn-{{ paper.id }}').onclick = function() {
                                 fetch("{% url 'conference:create_checkout_session' paper.id %}", {
@@ -57,9 +57,35 @@
                                 })
                                 .then(response => response.json())
                                 .then(data => {
-                                    if (data.id) {
-                                        var stripe = Stripe(data.stripe_public_key);
-                                        stripe.redirectToCheckout({ sessionId: data.id });
+                                    if (data.order_id) {
+                                        var options = {
+                                            key: data.razorpay_key_id,
+                                            amount: data.amount,
+                                            currency: data.currency,
+                                            name: "PaperSetu",
+                                            description: "Conference Paper Fee - " + data.paper_title,
+                                            order_id: data.order_id,
+                                            redirect: true,
+                                            callback_url: data.success_url,
+                                            cancel_url: data.cancel_url,
+                                            handler: function(response) {
+                                                // Redirect to success URL with payment details
+                                                var successUrl = data.success_url +
+                                                    "?razorpay_payment_id=" + response.razorpay_payment_id +
+                                                    "&razorpay_order_id=" + response.razorpay_order_id +
+                                                    "&razorpay_signature=" + response.razorpay_signature;
+                                                window.location.href = successUrl;
+                                            },
+                                            modal: {
+                                                ondismiss: function() {
+                                                    window.location.href = data.cancel_url;
+                                                }
+                                            },
+                                            prefill: {},
+                                            theme: { color: "#16a34a" }
+                                        };
+                                        var rzp = new Razorpay(options);
+                                        rzp.open();
                                     } else {
                                         alert(data.error || "Error creating payment session.");
                                     }

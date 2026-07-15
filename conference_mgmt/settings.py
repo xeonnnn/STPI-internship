@@ -300,11 +300,11 @@ LOGIN_URL = '/accounts/login/'
 
 LOGIN_REDIRECT_URL = '/' 
 
-# Stripe configuration
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_...')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_...')
-STRIPE_PAYMENT_AMOUNT = 50000  # Amount in paise (₹500 = 50000 paise)
-STRIPE_CURRENCY = 'inr' 
+# Razorpay configuration
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_TDpjNzREXf018M')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'YKGbJDRmruhvu2cWhemmFBCr')
+RAZORPAY_PAYMENT_AMOUNT = 50000  # Amount in paise (₹500 = 50000 paise)
+RAZORPAY_CURRENCY = 'INR' 
 
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://papersetu2.onrender.com')
 SITE_URL = os.environ.get('SITE_URL', 'https://papersetu2.onrender.com') 

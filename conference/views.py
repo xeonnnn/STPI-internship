@@ -18,46 +18,83 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from .models import Author
 
-import stripe
+import razorpay
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .models import Paper
 from django.db import models
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+razorpay_client = razorpay.Client(
+    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+)
 
 @csrf_exempt
 def create_checkout_session(request, paper_id):
+    """Create a Razorpay order and return order details to the frontend."""
     paper = get_object_or_404(Paper, id=paper_id)
     if paper.is_paid or paper.status != 'accepted':
         return JsonResponse({'error': 'Payment not allowed.'}, status=400)
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price_data': {
-                'currency': settings.STRIPE_CURRENCY,
-                'product_data': {
-                    'name': f'Conference Paper Fee (Paper #{paper.id})',
-                },
-                'unit_amount': settings.STRIPE_PAYMENT_AMOUNT,
-            },
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url=request.build_absolute_uri(f'/payment/success/{paper.id}/'),
-        cancel_url=request.build_absolute_uri(f'/payment/cancel/{paper.id}/'),
-        metadata={'paper_id': paper.id}
-    )
-    paper.stripe_session_id = session.id
-    paper.save()
-    return JsonResponse({'id': session.id, 'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY})
 
+    amount = settings.RAZORPAY_PAYMENT_AMOUNT  # Amount in paise
+    currency = settings.RAZORPAY_CURRENCY
+
+    order_data = {
+        'amount': amount,
+        'currency': currency,
+        'receipt': f'paper_{paper.id}',
+        'notes': {
+            'paper_id': str(paper.id),
+            'paper_title': paper.title,
+        }
+    }
+    order = razorpay_client.order.create(data=order_data)
+
+    # Reuse the existing stripe_session_id field to store the Razorpay order ID
+    paper.stripe_session_id = order['id']
+    paper.save()
+
+    return JsonResponse({
+        'order_id': order['id'],
+        'amount': amount,
+        'currency': currency,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+        'paper_id': paper.id,
+        'paper_title': paper.title,
+        'success_url': request.build_absolute_uri(
+            reverse('conference:payment_success', args=[paper.id])
+        ),
+        'cancel_url': request.build_absolute_uri(
+            reverse('conference:payment_cancel', args=[paper.id])
+        ),
+    })
+
+@csrf_exempt
 def payment_success(request, paper_id):
     paper = get_object_or_404(Paper, id=paper_id)
-    paper.is_paid = True
-    paper.save()
+    # Razorpay sends POST when redirect:true, GET when handler is used
+    params = request.POST if request.method == 'POST' else request.GET
+    razorpay_payment_id = params.get('razorpay_payment_id', '')
+    razorpay_order_id = params.get('razorpay_order_id', '')
+    razorpay_signature = params.get('razorpay_signature', '')
+    if razorpay_payment_id and razorpay_order_id and razorpay_signature:
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            })
+            paper.is_paid = True
+            paper.save()
+        except Exception:
+            if settings.DEBUG:
+                # In debug mode, trust the payment if IDs look valid
+                if razorpay_payment_id.startswith('pay_'):
+                    paper.is_paid = True
+                    paper.save()
+            else:
+                return render(request, 'conference/payment_cancel.html', {'paper_id': paper_id})
     return render(request, 'conference/payment_success.html', {'paper': paper})
 
 def payment_cancel(request, paper_id):
@@ -671,26 +708,42 @@ context = {
 } 
 
 @csrf_exempt
-def stripe_webhook(request):
+def razorpay_webhook(request):
+    """Handle Razorpay webhook events."""
+    import hmac
+    import hashlib
+    import json
     import os
+
+    webhook_secret = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
     payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-    endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
-    event = None
+    sig_header = request.META.get('HTTP_X_RAZORPAY_SIGNATURE', '')
+
+    if webhook_secret:
+        expected = hmac.new(
+            webhook_secret.encode(),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(expected, sig_header):
+            return HttpResponse(status=400)
+
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
+        event = json.loads(payload)
     except Exception:
         return HttpResponse(status=400)
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        paper_id = session['metadata']['paper_id']
-        from .models import Paper
-        paper = Paper.objects.get(id=paper_id)
-        paper.is_paid = True
-        paper.save()
-    return HttpResponse(status=200) 
+
+    if event.get('event') == 'payment.captured':
+        payment = event.get('payload', {}).get('payment', {}).get('entity', {})
+        order_id = payment.get('order_id')
+        if order_id:
+            from .models import Paper
+            paper = Paper.objects.filter(stripe_session_id=order_id).first()
+            if paper:
+                paper.is_paid = True
+                paper.save()
+
+    return HttpResponse(status=200)
 
 @login_required
 def author_papers_view(request, conference_id):

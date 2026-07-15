@@ -2988,6 +2988,7 @@ class CreateConferenceView(LoginRequiredMixin, CreateView):
         Handle POST requests: instantiate a form instance with the passed
         POST variables and then check if it's valid.
         """
+        self.object = None
         form = self.get_form()
         
         # Set the chair field to the current user
