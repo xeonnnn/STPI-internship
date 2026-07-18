@@ -25,6 +25,9 @@ from django.shortcuts import get_object_or_404, render
 from django.http import JsonResponse
 from .models import Paper
 from django.db import models
+from django.db.models import Avg
+import datetime
+from livekit import api as livekit_api
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -144,7 +147,79 @@ def send_payment_request_email(author_email, paper):
 
 
 def get_virtual_room_url(conference):
-    return reverse('conference:virtual_conference_room', args=[conference.id])
+    return reverse('conference:conference_room', args=[conference.id])
+
+
+def _format_conference_address(conference):
+    parts = [part for part in [conference.venue, conference.city, conference.country] if part]
+    return ', '.join(parts) if parts else 'TBD'
+
+
+def _get_top_rated_paper(conference):
+    return (
+        Paper.objects.filter(conference=conference)
+        .annotate(avg_rating=Avg('reviews__rating'))
+        .filter(avg_rating__isnull=False)
+        .order_by('-avg_rating', 'title')
+        .first()
+    )
+
+
+def _user_can_access_conference_room(user, conference):
+    if user.is_staff or user.is_superuser:
+        return True
+    if conference.chair == user:
+        return True
+    return UserConferenceRole.objects.filter(user=user, conference=conference).exists()
+
+
+def _user_is_conference_moderator(user, conference):
+    if user.is_staff:
+        return True
+    if UserConferenceRole.objects.filter(user=user, conference=conference, role='moderator').exists():
+        return True
+    if conference.chair == user:
+        return True
+    return False
+
+
+def _build_livekit_room_name(conference):
+    return f'conference-{conference.id}'
+
+
+def _generate_livekit_token(user, conference):
+    if not settings.LIVEKIT_API_KEY or not settings.LIVEKIT_API_SECRET:
+        raise ValueError('LiveKit credentials are not configured.')
+
+    room_name = _build_livekit_room_name(conference)
+    display_name = user.get_full_name() or user.username
+    is_moderator = _user_is_conference_moderator(user, conference)
+
+    grants = livekit_api.VideoGrants(
+        room_join=True,
+        room=room_name,
+        can_publish=True,
+        can_subscribe=True,
+        room_admin=is_moderator,
+    )
+
+    token = (
+        livekit_api.AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
+        .with_identity(str(user.id))
+        .with_name(display_name)
+        .with_ttl(datetime.timedelta(hours=2))
+        .with_grants(grants)
+        .to_jwt()
+    )
+
+    return {
+        'token': token,
+        'room': room_name,
+        'livekit_url': settings.LIVEKIT_URL,
+        'user_name': display_name,
+        'conference_name': conference.name,
+        'is_moderator': is_moderator,
+    }
 
 
 def get_virtual_room_state(conference):
@@ -887,41 +962,40 @@ def browse_conferences(request):
 
 
 @login_required
-def virtual_conference_room(request, conference_id):
+def conference_token(request, conference_id):
     conference = get_object_or_404(Conference, id=conference_id, is_approved=True)
-    room_state = get_virtual_room_state(conference)
-    user_roles = list(
-        UserConferenceRole.objects.filter(user=request.user, conference=conference).values_list('role', flat=True)
-    )
-    if conference.chair == request.user and 'chair' not in user_roles:
-        user_roles.append('chair')
 
-    room_config = {
-        'conference_id': conference.id,
-        'conference_name': conference.name,
-        'conference_acronym': conference.acronym or conference.name,
-        'room_state': room_state,
-        'room_url': get_virtual_room_url(conference),
-        'websocket_path': f'/ws/conference/{conference.id}/room/',
-        'ice_servers': getattr(settings, 'WEBRTC_ICE_SERVERS', [
-            {'urls': ['stun:stun.l.google.com:19302']}
-        ]),
-        'participant_name': request.user.get_full_name() or request.user.username,
-        'user_roles': user_roles,
-        'is_host': conference.chair == request.user,
-        'can_join_live': conference.status in ['upcoming', 'live'],
+    if not _user_can_access_conference_room(request.user, conference):
+        return JsonResponse({'error': 'You are not authorized to join this conference room.'}, status=403)
+
+    try:
+        payload = _generate_livekit_token(request.user, conference)
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+
+    return JsonResponse(payload)
+
+
+@login_required
+def conference_room(request, conference_id):
+    conference = get_object_or_404(Conference, id=conference_id, is_approved=True)
+
+    if not _user_can_access_conference_room(request.user, conference):
+        messages.error(request, 'You are not authorized to join this conference room.')
+        return redirect('conference:conferences_list')
+
+    top_paper = _get_top_rated_paper(conference)
+    context = {
+        'conference': conference,
+        'venue_address': _format_conference_address(conference),
+        'top_rated_paper': top_paper,
+        'top_paper_rating': top_paper.avg_rating if top_paper else None,
+        'organizer_name': conference.organizer or conference.chair_name or (
+            conference.chair.get_full_name() if conference.chair else 'TBD'
+        ),
     }
+    return render(request, 'conference/conference_room.html', context)
 
-    return render(
-        request,
-        'conference/virtual_conference_room.html',
-        {
-            'conference': conference,
-            'room_state': room_state,
-            'room_config': room_config,
-            'user_roles': user_roles,
-        },
-    )
 
 def join_conference_redirect(request, conference_id):
     """
