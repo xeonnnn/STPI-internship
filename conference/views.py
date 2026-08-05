@@ -189,7 +189,16 @@ def _user_is_conference_moderator(user, conference):
 
 
 def _build_jitsi_room_name(conference):
-    return f'conference-{conference.id}'
+    room_seed = '|'.join([
+        str(conference.id),
+        conference.invite_link or '',
+        conference.acronym or '',
+        conference.created_at.isoformat() if conference.created_at else '',
+        str(conference.chair_id or ''),
+        settings.SECRET_KEY,
+    ])
+    room_hash = hashlib.sha256(room_seed.encode('utf-8')).hexdigest()[:24]
+    return f'paper-setu-{room_hash}'
 
 
 def _base64url_encode(payload):
