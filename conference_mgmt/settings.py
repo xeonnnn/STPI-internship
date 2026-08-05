@@ -4,6 +4,10 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+from dotenv import load_dotenv
+
+load_dotenv(BASE_DIR / '.env')
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-please-change-this-key')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -214,6 +218,16 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Jitsi conference provider settings.
+# If JITSI_APP_ID and JITSI_APP_SECRET are set, the app will generate
+# signed JWTs so chair/admin users can receive moderator privileges.
+JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'meet.jit.si')
+JITSI_APP_ID = os.environ.get('JITSI_APP_ID', '')
+JITSI_APP_SECRET = os.environ.get('JITSI_APP_SECRET', '')
+JITSI_AUDIENCE = os.environ.get('JITSI_AUDIENCE', 'jitsi')
+JITSI_ISSUER = os.environ.get('JITSI_ISSUER', JITSI_APP_ID)
+JITSI_SUBJECT = os.environ.get('JITSI_SUBJECT', JITSI_APP_ID)
+
 # Add whitenoise middleware for static files in production
 if not DEBUG:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
@@ -316,4 +330,9 @@ STRIPE_PAYMENT_AMOUNT = 50000  # Amount in paise (₹500 = 50000 paise)
 STRIPE_CURRENCY = 'inr' 
 
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://papersetu2.onrender.com')
-SITE_URL = os.environ.get('SITE_URL', 'https://papersetu2.onrender.com') 
+SITE_URL = os.environ.get('SITE_URL', 'https://papersetu2.onrender.com')
+
+# LiveKit Cloud (video conference)
+LIVEKIT_API_KEY = os.environ.get('LIVEKIT_API_KEY')
+LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET')
+LIVEKIT_URL = os.environ.get('LIVEKIT_URL', 'wss://your-project.livekit.cloud')

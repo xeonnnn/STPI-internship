@@ -8,6 +8,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://meet.jit.si">
+    <link rel="preconnect" href="https://meet.jit.si" crossorigin>
+    <style>
+        @media (max-width: 640px) {
+            .conference-card {
+                min-width: 0 !important;
+                max-width: none !important;
+            }
+
+            .conference-actions {
+                flex-direction: column;
+            }
+
+            .conference-actions a {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-gray-100">
     <!-- Navigation -->
@@ -124,7 +142,7 @@
                     <!-- Conferences Container -->
                     <div id="conferences-container" class="flex gap-6 overflow-x-auto scrollbar-hide px-4 py-2" style="scroll-behavior: smooth;">
                         {% for conference in conferences %}
-                            <div class="bg-white rounded-xl shadow-lg p-6 border border-blue-100 flex flex-col justify-between min-w-[350px] max-w-[350px] hover:scale-105 hover:shadow-2xl transition-all duration-300">
+                            <div class="conference-card bg-white rounded-xl shadow-lg p-6 border border-blue-100 flex flex-col justify-between min-w-[350px] max-w-[350px] hover:scale-105 hover:shadow-2xl transition-all duration-300">
                                 <div>
                                     <div class="flex justify-between items-center mb-3">
                                         <div>
@@ -155,9 +173,9 @@
                                             <p class="text-gray-600 text-sm">{{ conference.description|truncatechars:100 }}</p>
                                         {% endif %}
                                     </div>
-                                    <div class="flex space-x-2 mt-auto">
+                                    <div class="conference-actions flex gap-2 mt-auto">
                                         <a href="/conference/{{ conference.id }}/choose-role/" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Join</a>
-                                        <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Virtual Room</a>
+                                        <a href="{% url 'conference:conference_room' conference.id %}" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-4 py-2 shadow transition-all duration-200 text-center">Join Video Conference</a>
                                     </div>
                                 </div>
                             </div>

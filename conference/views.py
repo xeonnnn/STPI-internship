@@ -25,6 +25,12 @@ from django.shortcuts import get_object_or_404, render
 from django.http import JsonResponse
 from .models import Paper
 from django.db import models
+from django.db.models import Avg
+import base64
+import hmac
+import json
+import hashlib
+import time
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -144,7 +150,126 @@ def send_payment_request_email(author_email, paper):
 
 
 def get_virtual_room_url(conference):
-    return reverse('conference:virtual_conference_room', args=[conference.id])
+    return reverse('conference:conference_room', args=[conference.id])
+
+
+def _format_conference_address(conference):
+    parts = [part for part in [conference.venue, conference.city, conference.country] if part]
+    return ', '.join(parts) if parts else 'TBD'
+
+
+def _get_top_rated_paper(conference):
+    return (
+        Paper.objects.filter(conference=conference)
+        .annotate(avg_rating=Avg('reviews__rating'))
+        .filter(avg_rating__isnull=False)
+        .order_by('-avg_rating', 'title')
+        .first()
+    )
+
+
+def _user_can_access_conference_room(user, conference):
+    if user.is_staff or user.is_superuser:
+        return True
+    if conference.chair == user:
+        return True
+    if not user.is_authenticated:
+        return False
+    if conference.is_approved and conference.status in ['upcoming', 'live']:
+        return True
+    return UserConferenceRole.objects.filter(user=user, conference=conference).exists()
+
+
+def _user_is_conference_moderator(user, conference):
+    if user.is_staff or user.is_superuser:
+        return True
+    if conference.chair == user:
+        return True
+    return False
+
+
+def _build_jitsi_room_name(conference):
+    room_seed = '|'.join([
+        str(conference.id),
+        conference.invite_link or '',
+        conference.acronym or '',
+        conference.created_at.isoformat() if conference.created_at else '',
+        str(conference.chair_id or ''),
+        settings.SECRET_KEY,
+    ])
+    room_hash = hashlib.sha256(room_seed.encode('utf-8')).hexdigest()[:24]
+    return f'paper-setu-{room_hash}'
+
+
+def _base64url_encode(payload):
+    return base64.urlsafe_b64encode(payload).decode('utf-8').rstrip('=')
+
+
+def _get_user_display_name(user):
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return full_name
+
+    fallback_name = f'{user.first_name} {user.last_name}'.strip()
+    if fallback_name:
+        return fallback_name
+
+    return user.email or user.username
+
+
+def _build_jitsi_jwt(user, conference, room_name, is_moderator):
+    app_id = getattr(settings, 'JITSI_APP_ID', '')
+    app_secret = getattr(settings, 'JITSI_APP_SECRET', '')
+    issuer = getattr(settings, 'JITSI_ISSUER', app_id)
+    audience = getattr(settings, 'JITSI_AUDIENCE', 'jitsi')
+
+    if not app_id or not app_secret:
+        return None
+
+    now = int(time.time())
+    display_name = _get_user_display_name(user)
+    email = user.email or ''
+
+    header = {'alg': 'HS256', 'typ': 'JWT'}
+    payload = {
+        'aud': audience,
+        'iss': issuer,
+        'sub': getattr(settings, 'JITSI_SUBJECT', app_id),
+        'room': room_name,
+        'exp': now + 7200,
+        'nbf': now - 10,
+        'iat': now,
+        'context': {
+            'user': {
+                'name': display_name,
+                'email': email,
+                'avatar': '',
+                'moderator': is_moderator,
+            }
+        },
+    }
+
+    header_segment = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
+    payload_segment = _base64url_encode(json.dumps(payload, separators=(',', ':')).encode('utf-8'))
+    signing_input = f'{header_segment}.{payload_segment}'.encode('utf-8')
+    signature = hmac.new(app_secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
+    signature_segment = _base64url_encode(signature)
+    return f'{header_segment}.{payload_segment}.{signature_segment}'
+
+
+def _build_jitsi_room_config(user, conference):
+    room_name = _build_jitsi_room_name(conference)
+    is_moderator = _user_is_conference_moderator(user, conference)
+    return {
+        'room_name': room_name,
+        'participant_name': _get_user_display_name(user),
+        'conference_name': conference.name,
+        'room_url': reverse('conference:conference_room', args=[conference.id]),
+        'return_url': reverse('conference:choose_conference_role', args=[conference.id]),
+        'is_moderator': is_moderator,
+        'jitsi_domain': getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si'),
+        'jwt': _build_jitsi_jwt(user, conference, room_name, is_moderator),
+    }
 
 
 def get_virtual_room_state(conference):
@@ -887,41 +1012,29 @@ def browse_conferences(request):
 
 
 @login_required
-def virtual_conference_room(request, conference_id):
+def conference_token(request, conference_id):
     conference = get_object_or_404(Conference, id=conference_id, is_approved=True)
-    room_state = get_virtual_room_state(conference)
-    user_roles = list(
-        UserConferenceRole.objects.filter(user=request.user, conference=conference).values_list('role', flat=True)
-    )
-    if conference.chair == request.user and 'chair' not in user_roles:
-        user_roles.append('chair')
 
-    room_config = {
-        'conference_id': conference.id,
-        'conference_name': conference.name,
-        'conference_acronym': conference.acronym or conference.name,
-        'room_state': room_state,
-        'room_url': get_virtual_room_url(conference),
-        'websocket_path': f'/ws/conference/{conference.id}/room/',
-        'ice_servers': getattr(settings, 'WEBRTC_ICE_SERVERS', [
-            {'urls': ['stun:stun.l.google.com:19302']}
-        ]),
-        'participant_name': request.user.get_full_name() or request.user.username,
-        'user_roles': user_roles,
-        'is_host': conference.chair == request.user,
-        'can_join_live': conference.status in ['upcoming', 'live'],
+    if not _user_can_access_conference_room(request.user, conference):
+        return JsonResponse({'error': 'You are not authorized to join this conference room.'}, status=403)
+
+    return JsonResponse(_build_jitsi_room_config(request.user, conference))
+
+
+@login_required
+def conference_room(request, conference_id):
+    conference = get_object_or_404(Conference, id=conference_id, is_approved=True)
+
+    if not _user_can_access_conference_room(request.user, conference):
+        messages.error(request, 'You are not authorized to join this conference room.')
+        return redirect('conference:conferences_list')
+
+    context = {
+        'conference': conference,
+        'room_config': _build_jitsi_room_config(request.user, conference),
     }
+    return render(request, 'conference/virtual_conference_room.html', context)
 
-    return render(
-        request,
-        'conference/virtual_conference_room.html',
-        {
-            'conference': conference,
-            'room_state': room_state,
-            'room_config': room_config,
-            'user_roles': user_roles,
-        },
-    )
 
 def join_conference_redirect(request, conference_id):
     """
