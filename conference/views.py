@@ -173,6 +173,10 @@ def _user_can_access_conference_room(user, conference):
         return True
     if conference.chair == user:
         return True
+    if not user.is_authenticated:
+        return False
+    if conference.is_approved and conference.status in ['upcoming', 'live']:
+        return True
     return UserConferenceRole.objects.filter(user=user, conference=conference).exists()
 
 

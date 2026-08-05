@@ -11,103 +11,86 @@
     const domain = config.jitsi_domain || 'meet.jit.si';
     const displayName = config.participant_name || config.display_name || config.user_name || '';
     const isModerator = Boolean(config.is_moderator);
+    const container = document.getElementById('jitsi-container');
 
-    const options = {
-        roomName: roomName,
-        width: '100%',
-        height: '100%',
-        parentNode: document.getElementById('jitsi-container'),
-        jwt: config.jwt || undefined,
-        configOverwrite: {
-            prejoinPageEnabled: false,
-            startWithAudioMuted: !isModerator,
-            startWithVideoMuted: false,
-            enableNoAudioDetection: false,
-            enableNoisyMicDetection: false,
-            disableDeepLinking: true,
-            hideConferenceTimer: false,
-            enableCalendarIntegration: false,
-            roomPasswordNumberOfDigits: 0,
-            doNotStoreRoomPassword: true,
-            requireDisplayName: false,
-            disableInviteFunctions: true,
-            disableRemoteMute: false,
-            localRecording: {
-                enabled: false,
-            },
-            fileRecordingsEnabled: false,
-            liveStreamingEnabled: false,
-            welcomePageDisabled: true,
-            remoteVideoMenu: {
-                disabled: false,
-            },
-            disableSelfView: false,
-            disable1On1Mode: true,
-            disableModeratorIndicator: false,
-            // Ensure toolbar is always visible on mobile
-            toolbarConfig: {
-                autoHideWhileChatIsOpen: false,
-                alwaysVisible: true,
-            },
-            participantsPane: {
-                enabled: true,
-            },
-            chat: {
-                enabled: true,
-            },
-            raiseHand: {
-                enabled: true,
-            },
-            reactions: {
-                enabled: true,
-            },
-            noiseSuppression: {
-                enabled: true,
-            },
-            backgroundAlpha: 1,
-            startAudioMuted: 0,
-            startVideoMuted: 0,
-            enableClosePage: false,
-            disableInitialGUM: false,
-            notifications: [],
-            disableNotifications: true,
-            disableProfile: true,
-            readOnlyName: true,
-            enableWelcomePage: false,
-            enableClosePage: false,
-        },
-        interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            SHOW_BRAND_WATERMARK: false,
-            SHOW_POWERED_BY: false,
-            DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-            DISABLE_PRESENCE_STATUS: true,
-            DEFAULT_REMOTE_DISPLAY_NAME: 'Guest',
-            TOOLBAR_BUTTONS: [
-                'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-                'fodeviceselection', 'hangup', 'chat', 'settings', 'raisehand',
-                'tileview', 'videobackgroundblur', 'participants-pane'
-            ],
-            SETTINGS_SECTIONS: ['devices', 'language', 'moderator', 'calendar'],
-            SHOW_CHROME_EXTENSION_BANNER: false,
-            SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-            SUPPORT_URL: '#',
-            MOBILE_APP_PROMO: false,
-        },
-        userInfo: {
-            displayName: displayName
-        }
-    };
+    if (!container) {
+        console.error('Error: No jitsi-container element found');
+        return;
+    }
 
-    const script = document.createElement('script');
-    script.src = 'https://meet.jit.si/external_api.js';
-    script.onload = function() {
-        const api = new JitsiMeetExternalAPI(domain, options);
+    const iframe = document.createElement('iframe');
+    iframe.src = buildJitsiUrl(domain, roomName, config, displayName, isModerator);
+    iframe.allow = 'camera; microphone; fullscreen; display-capture; autoplay; clipboard-read; clipboard-write';
+    iframe.style.border = '0';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.display = 'block';
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.setAttribute('title', config.conference_name || 'Jitsi meeting');
 
-        api.addListener('readyToClose', function() {
-            window.location.href = config.return_url || config.room_url.replace('/room/', '/choose-role/');
-        });
-    };
-    document.body.appendChild(script);
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.textContent = 'Connecting to the conference...';
+    loadingOverlay.style.position = 'absolute';
+    loadingOverlay.style.inset = '0';
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.style.alignItems = 'center';
+    loadingOverlay.style.justifyContent = 'center';
+    loadingOverlay.style.background = 'rgba(0, 0, 0, 0.6)';
+    loadingOverlay.style.color = '#fff';
+    loadingOverlay.style.fontSize = '1rem';
+    loadingOverlay.style.zIndex = '2';
+
+    iframe.addEventListener('load', function () {
+        loadingOverlay.style.display = 'none';
+    });
+
+    container.style.position = 'relative';
+    container.appendChild(loadingOverlay);
+    container.appendChild(iframe);
 })();
+
+function buildJitsiUrl(domain, roomName, config, displayName, isModerator) {
+    const url = new URL(`https://${domain}/${roomName}`);
+
+    if (config.jwt) {
+        url.searchParams.set('jwt', config.jwt);
+    }
+
+    const hashParams = new URLSearchParams();
+    hashParams.set('config.prejoinPageEnabled', 'false');
+    hashParams.set('config.startWithAudioMuted', String(!isModerator));
+    hashParams.set('config.startWithVideoMuted', 'false');
+    hashParams.set('config.disableDeepLinking', 'true');
+    hashParams.set('config.enableNoAudioDetection', 'false');
+    hashParams.set('config.enableNoisyMicDetection', 'false');
+    hashParams.set('config.hideConferenceTimer', 'false');
+    hashParams.set('config.enableCalendarIntegration', 'false');
+    hashParams.set('config.requireDisplayName', 'false');
+    hashParams.set('config.disableInviteFunctions', 'true');
+    hashParams.set('config.disableRemoteMute', 'false');
+    hashParams.set('config.fileRecordingsEnabled', 'false');
+    hashParams.set('config.liveStreamingEnabled', 'false');
+    hashParams.set('config.welcomePageDisabled', 'true');
+    hashParams.set('config.disableSelfView', 'false');
+    hashParams.set('config.disable1On1Mode', 'true');
+    hashParams.set('config.disableModeratorIndicator', 'false');
+    hashParams.set('config.enableClosePage', 'false');
+    hashParams.set('config.disableNotifications', 'true');
+    hashParams.set('config.disableProfile', 'true');
+    hashParams.set('config.readOnlyName', 'true');
+    hashParams.set('interfaceConfig.SHOW_JITSI_WATERMARK', 'false');
+    hashParams.set('interfaceConfig.SHOW_WATERMARK_FOR_GUESTS', 'false');
+    hashParams.set('interfaceConfig.SHOW_BRAND_WATERMARK', 'false');
+    hashParams.set('interfaceConfig.SHOW_POWERED_BY', 'false');
+    hashParams.set('interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS', 'true');
+    hashParams.set('interfaceConfig.DISABLE_PRESENCE_STATUS', 'true');
+    hashParams.set('interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME', 'Guest');
+    hashParams.set('interfaceConfig.SHOW_CHROME_EXTENSION_BANNER', 'false');
+    hashParams.set('interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE', 'false');
+    hashParams.set('interfaceConfig.SUPPORT_URL', '#');
+    hashParams.set('interfaceConfig.MOBILE_APP_PROMO', 'false');
+    hashParams.set('userInfo.displayName', displayName);
+
+    url.hash = hashParams.toString();
+    return url.toString();
+}
