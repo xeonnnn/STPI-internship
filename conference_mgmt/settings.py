@@ -218,6 +218,16 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Jitsi conference provider settings.
+# If JITSI_APP_ID and JITSI_APP_SECRET are set, the app will generate
+# signed JWTs so chair/admin users can receive moderator privileges.
+JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'meet.jit.si')
+JITSI_APP_ID = os.environ.get('JITSI_APP_ID', '')
+JITSI_APP_SECRET = os.environ.get('JITSI_APP_SECRET', '')
+JITSI_AUDIENCE = os.environ.get('JITSI_AUDIENCE', 'jitsi')
+JITSI_ISSUER = os.environ.get('JITSI_ISSUER', JITSI_APP_ID)
+JITSI_SUBJECT = os.environ.get('JITSI_SUBJECT', JITSI_APP_ID)
+
 # Add whitenoise middleware for static files in production
 if not DEBUG:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')

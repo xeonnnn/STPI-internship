@@ -26,8 +26,11 @@ from django.http import JsonResponse
 from .models import Paper
 from django.db import models
 from django.db.models import Avg
-import datetime
-from livekit import api as livekit_api
+import base64
+import hmac
+import json
+import hashlib
+import time
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -174,51 +177,85 @@ def _user_can_access_conference_room(user, conference):
 
 
 def _user_is_conference_moderator(user, conference):
-    if user.is_staff:
-        return True
-    if UserConferenceRole.objects.filter(user=user, conference=conference, role='moderator').exists():
+    if user.is_staff or user.is_superuser:
         return True
     if conference.chair == user:
         return True
     return False
 
 
-def _build_livekit_room_name(conference):
+def _build_jitsi_room_name(conference):
     return f'conference-{conference.id}'
 
 
-def _generate_livekit_token(user, conference):
-    if not settings.LIVEKIT_API_KEY or not settings.LIVEKIT_API_SECRET:
-        raise ValueError('LiveKit credentials are not configured.')
+def _base64url_encode(payload):
+    return base64.urlsafe_b64encode(payload).decode('utf-8').rstrip('=')
 
-    room_name = _build_livekit_room_name(conference)
-    display_name = user.get_full_name() or user.username
-    is_moderator = _user_is_conference_moderator(user, conference)
 
-    grants = livekit_api.VideoGrants(
-        room_join=True,
-        room=room_name,
-        can_publish=True,
-        can_subscribe=True,
-        room_admin=is_moderator,
-    )
+def _get_user_display_name(user):
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return full_name
 
-    token = (
-        livekit_api.AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
-        .with_identity(str(user.id))
-        .with_name(display_name)
-        .with_ttl(datetime.timedelta(hours=2))
-        .with_grants(grants)
-        .to_jwt()
-    )
+    fallback_name = f'{user.first_name} {user.last_name}'.strip()
+    if fallback_name:
+        return fallback_name
 
-    return {
-        'token': token,
+    return user.email or user.username
+
+
+def _build_jitsi_jwt(user, conference, room_name, is_moderator):
+    app_id = getattr(settings, 'JITSI_APP_ID', '')
+    app_secret = getattr(settings, 'JITSI_APP_SECRET', '')
+    issuer = getattr(settings, 'JITSI_ISSUER', app_id)
+    audience = getattr(settings, 'JITSI_AUDIENCE', 'jitsi')
+
+    if not app_id or not app_secret:
+        return None
+
+    now = int(time.time())
+    display_name = _get_user_display_name(user)
+    email = user.email or ''
+
+    header = {'alg': 'HS256', 'typ': 'JWT'}
+    payload = {
+        'aud': audience,
+        'iss': issuer,
+        'sub': getattr(settings, 'JITSI_SUBJECT', app_id),
         'room': room_name,
-        'livekit_url': settings.LIVEKIT_URL,
-        'user_name': display_name,
+        'exp': now + 7200,
+        'nbf': now - 10,
+        'iat': now,
+        'context': {
+            'user': {
+                'name': display_name,
+                'email': email,
+                'avatar': '',
+                'moderator': is_moderator,
+            }
+        },
+    }
+
+    header_segment = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
+    payload_segment = _base64url_encode(json.dumps(payload, separators=(',', ':')).encode('utf-8'))
+    signing_input = f'{header_segment}.{payload_segment}'.encode('utf-8')
+    signature = hmac.new(app_secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
+    signature_segment = _base64url_encode(signature)
+    return f'{header_segment}.{payload_segment}.{signature_segment}'
+
+
+def _build_jitsi_room_config(user, conference):
+    room_name = _build_jitsi_room_name(conference)
+    is_moderator = _user_is_conference_moderator(user, conference)
+    return {
+        'room_name': room_name,
+        'participant_name': _get_user_display_name(user),
         'conference_name': conference.name,
+        'room_url': reverse('conference:conference_room', args=[conference.id]),
+        'return_url': reverse('conference:choose_conference_role', args=[conference.id]),
         'is_moderator': is_moderator,
+        'jitsi_domain': getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si'),
+        'jwt': _build_jitsi_jwt(user, conference, room_name, is_moderator),
     }
 
 
@@ -968,12 +1005,7 @@ def conference_token(request, conference_id):
     if not _user_can_access_conference_room(request.user, conference):
         return JsonResponse({'error': 'You are not authorized to join this conference room.'}, status=403)
 
-    try:
-        payload = _generate_livekit_token(request.user, conference)
-    except ValueError as exc:
-        return JsonResponse({'error': str(exc)}, status=503)
-
-    return JsonResponse(payload)
+    return JsonResponse(_build_jitsi_room_config(request.user, conference))
 
 
 @login_required
@@ -984,17 +1016,11 @@ def conference_room(request, conference_id):
         messages.error(request, 'You are not authorized to join this conference room.')
         return redirect('conference:conferences_list')
 
-    top_paper = _get_top_rated_paper(conference)
     context = {
         'conference': conference,
-        'venue_address': _format_conference_address(conference),
-        'top_rated_paper': top_paper,
-        'top_paper_rating': top_paper.avg_rating if top_paper else None,
-        'organizer_name': conference.organizer or conference.chair_name or (
-            conference.chair.get_full_name() if conference.chair else 'TBD'
-        ),
+        'room_config': _build_jitsi_room_config(request.user, conference),
     }
-    return render(request, 'conference/conference_room.html', context)
+    return render(request, 'conference/virtual_conference_room.html', context)
 
 
 def join_conference_redirect(request, conference_id):
