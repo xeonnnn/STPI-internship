@@ -1,0 +1,386 @@
+{% extends 'dashboard/dashboard.html' %}
+{% block content %}
+<style>
+    .form-container { 
+        background: white; 
+        border-radius: 16px; 
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+    }
+    .form-title { 
+        color: #1e293b; 
+        font-weight: 600; 
+        letter-spacing: -0.025em;
+    }
+    .form-label { 
+        color: #374151; 
+        font-weight: 500; 
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .form-input { 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px; 
+        background: #ffffff; 
+        padding: 0.75rem 1rem; 
+        font-size: 0.875rem; 
+        transition: all 0.2s ease; 
+        color: #1e293b;
+        width: 100%;
+    }
+    .form-input:focus { 
+        outline: none; 
+        border-color: #3b82f6; 
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+    }
+    .submit-btn { 
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
+        color: white;
+        font-weight: 600;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    .submit-btn:hover { 
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .section-divider {
+        border-top: 1px solid #e5e7eb;
+        margin: 2rem 0;
+    }
+    .section-title {
+        color: #374151;
+        font-weight: 600;
+        font-size: 1.125rem;
+        margin-bottom: 1.5rem;
+    }
+    .required-field {
+        color: #dc2626;
+    }
+    
+    /* Radio styling to match inputs */
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #4b5563;
+        font-size: 0.875rem;
+        cursor: pointer;
+    }
+    .radio-label input[type="radio"] {
+        accent-color: #3b82f6;
+        width: 1rem;
+        height: 1rem;
+    }
+    
+    /* File input styling */
+    .file-input-wrapper {
+        border: 1px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #f8fafc;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+    .file-input-wrapper:hover {
+        border-color: #3b82f6;
+        background: #f0f9ff;
+    }
+    .file-input-button {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+    .file-input-button:hover {
+        background: #cbd5e1;
+    }
+    input[type="file"] {
+        display: none;
+    }
+    .file-name-display {
+        font-size: 0.75rem;
+        color: #64748b;
+        display: block;
+    }
+</style>
+
+<div class="max-w-4xl mx-auto py-8">
+    <div class="form-container p-8">
+        
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="form-title text-3xl mb-2 text-indigo-800">Registration Detail Form</h1>
+                <p class="text-gray-600 text-sm">7th ICIMMI 2025</p>
+                <p class="text-sm text-red-600 mt-2"><span class="required-field">*</span> Required fields</p>
+            </div>
+            <a href="{% url 'conference:author_papers' conference.id %}" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to Papers
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="{% if message.tags == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% else %}bg-green-50 border-l-4 border-green-500 text-green-700{% endif %} p-4 rounded mb-6">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" action="{% url 'conference:conference_register' paper.id %}">
+            {% csrf_token %}
+            
+            <!-- Contact Information -->
+            <div>
+                <h2 class="section-title text-indigo-700"><i class="fas fa-address-card mr-2"></i>Contact Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="form-label">Email <span class="required-field">*</span></label>
+                        <input type="email" name="email" class="form-input" value="{{ request.user.email }}" required>
+                        <div class="mt-2 flex items-start gap-2">
+                            <input type="checkbox" id="record_email" name="record_email" class="mt-1" style="accent-color: #3b82f6;">
+                            <label for="record_email" class="text-xs text-gray-500 cursor-pointer">
+                                Record <strong>icimmi@poornima.org</strong> as the email to be included with my response
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Mobile (Whatsapp) No. <span class="required-field">*</span></label>
+                        <input type="text" name="mobile" class="form-input" required placeholder="Enter mobile number">
+                    </div>
+                    <div>
+                        <label class="form-label">Conference Paper ID <span class="required-field">*</span></label>
+                        <input type="text" name="paper_id_display" class="form-input bg-gray-50 text-gray-500" value="{{ paper.paper_id }}" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Author Details -->
+            <div>
+                <h2 class="section-title text-indigo-700"><i class="fas fa-users mr-2"></i>Author Details</h2>
+                
+                <div class="mb-6">
+                    <label class="form-label">Number of Authors <span class="required-field">*</span></label>
+                    <div class="flex flex-wrap gap-4 mt-2">
+                        <label class="radio-label"><input type="radio" name="num_authors" value="1" required> 1</label>
+                        <label class="radio-label"><input type="radio" name="num_authors" value="2"> 2</label>
+                        <label class="radio-label"><input type="radio" name="num_authors" value="3"> 3</label>
+                        <label class="radio-label"><input type="radio" name="num_authors" value="4"> 4</label>
+                        <label class="radio-label"><input type="radio" name="num_authors" value="5"> 5</label>
+                        <label class="radio-label"><input type="radio" name="num_authors" value="6"> 6</label>
+                        <label class="radio-label">
+                            <input type="radio" name="num_authors" value="other" id="other-radio"> Other:
+                        </label>
+                        <input type="text" name="num_authors_other" class="form-input w-24 py-1" id="other-authors-field" style="display:none;" placeholder="Specify">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="form-label">Name of 1st Author <span class="required-field">*</span></label>
+                        <input type="text" name="name_first_author" class="form-input" required placeholder="Full name">
+                    </div>
+                    <div>
+                        <label class="form-label">Affiliation of 1st Author <span class="required-field">*</span></label>
+                        <input type="text" name="affiliation_first_author" class="form-input" required placeholder="University/Organization">
+                    </div>
+                    <div>
+                        <label class="form-label">Affiliation of Corresponding Author <span class="required-field">*</span></label>
+                        <input type="text" name="affiliation_corresponding" class="form-input" required placeholder="University/Organization">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="form-label">Designation of 1st Author <span class="required-field">*</span></label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                        <label class="radio-label"><input type="radio" name="designation_first_author" value="professor" required> Professor/Assoc Prof/Asst Professor</label>
+                        <label class="radio-label"><input type="radio" name="designation_first_author" value="industry"> Industry Expert</label>
+                        <label class="radio-label"><input type="radio" name="designation_first_author" value="researcher"> Researcher/PhD Scholar</label>
+                        <label class="radio-label"><input type="radio" name="designation_first_author" value="pg"> PG Student</label>
+                        <label class="radio-label"><input type="radio" name="designation_first_author" value="ug"> UG Student</label>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="form-label">Any International Author in the Paper? <span class="required-field">*</span></label>
+                    <div class="flex gap-4 mt-2">
+                        <label class="radio-label"><input type="radio" name="has_international_author" value="yes" required id="intl-yes"> Yes</label>
+                        <label class="radio-label"><input type="radio" name="has_international_author" value="no" id="intl-no"> No</label>
+                    </div>
+                </div>
+
+                <div id="intl-affiliation-section" style="display:none;" class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <label class="form-label">Affiliation of International Author (if any)</label>
+                    <input type="text" name="affiliation_international" class="form-input" placeholder="University/Organization">
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Presentation & Publication -->
+            <div>
+                <h2 class="section-title text-indigo-700"><i class="fas fa-desktop mr-2"></i>Presentation & Publication</h2>
+                
+                <div class="mb-6">
+                    <label class="form-label">Choice of Paper Presentation Mode <span class="required-field">*</span></label>
+                    <div class="flex flex-col gap-3 mt-2">
+                        <label class="radio-label"><input type="radio" name="presentation_mode" value="online" required> Online</label>
+                        <label class="radio-label">
+                            <input type="radio" name="presentation_mode" value="offline"> 
+                            PIET, Jaipur - Offline <span class="text-xs text-gray-500 ml-1">(Mandatory for Local Participants)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="form-label">Publication Choice <span class="required-field">*</span></label>
+                    <div class="flex flex-col gap-3 mt-2">
+                        <label class="radio-label items-start">
+                            <input type="radio" name="publication_choice" value="acm" required class="mt-1"> 
+                            <span>ACM-ICPS (Scopus Conference Proceedings, Open Access Fee is to be paid by authors <a href="https://icimmi.poornima.org/register" target="_blank" class="text-blue-600 hover:underline">Link</a>)</span>
+                        </label>
+                        <label class="radio-label items-start">
+                            <input type="radio" name="publication_choice" value="taru" class="mt-1"> 
+                            <span>Taru-JDMSC (Scopus Q1, Journal, Additional APC Applicable)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Payment & Membership -->
+            <div>
+                <h2 class="section-title text-indigo-700"><i class="fas fa-credit-card mr-2"></i>Payment & Membership</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="form-label">Amount Paid for Registration (INR/USD) <span class="required-field">*</span></label>
+                        <input type="text" name="amount_paid" class="form-input" required placeholder="e.g. 500 INR">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="form-label">Do you have membership of IEEE/ACM/FIP/CSI/IETE? <span class="required-field">*</span></label>
+                    <div class="flex gap-4 mt-2">
+                        <label class="radio-label"><input type="radio" name="has_membership" value="yes" required id="membership-yes"> Yes</label>
+                        <label class="radio-label"><input type="radio" name="has_membership" value="no" id="membership-no"> No</label>
+                    </div>
+                </div>
+
+                <div id="membership-proof-section" style="display:none;" class="mb-6">
+                    <label class="form-label">Upload your Membership proof</label>
+                    <div class="file-input-wrapper">
+                        <label for="membership_proof_file" class="file-input-button">Choose File</label>
+                        <input type="file" id="membership_proof_file" name="membership_proof" accept=".pdf,image/*">
+                        <span class="file-name-display mt-1">PDF or Image (Max 10 MB)</span>
+                        <span id="membership_proof_name" class="text-sm font-medium text-indigo-600 mt-2 block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Document Uploads -->
+            <div>
+                <h2 class="section-title text-indigo-700"><i class="fas fa-file-upload mr-2"></i>Document Uploads</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="form-label">Upload PDF Copy of Paper</label>
+                        <div class="file-input-wrapper">
+                            <label for="pdf_copy_file" class="file-input-button">Choose File</label>
+                            <input type="file" id="pdf_copy_file" name="pdf_copy" accept=".pdf">
+                            <span class="file-name-display mt-1">PDF format (Max 10 MB)</span>
+                            <span id="pdf_copy_name" class="text-sm font-medium text-indigo-600 mt-2 block"></span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">Upload Plagiarism report of revised paper</label>
+                        <div class="file-input-wrapper">
+                            <label for="plagiarism_file" class="file-input-button">Choose File</label>
+                            <input type="file" id="plagiarism_file" name="plagiarism_report" accept=".pdf">
+                            <span class="file-name-display mt-1">PDF format (Max 10 MB)</span>
+                            <span id="plagiarism_name" class="text-sm font-medium text-indigo-600 mt-2 block"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-10 text-center flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <button type="submit" class="submit-btn w-full sm:w-auto text-lg">
+                    <i class="fas fa-paper-plane mr-2"></i> Submit Registration
+                </button>
+                <button type="reset" class="text-gray-500 hover:text-gray-700 font-medium py-2 px-4 transition">
+                    Clear form
+                </button>
+            </div>
+            
+        </form>
+    </div>
+</div>
+
+<script>
+    // Handle "Other" authors field visibility
+    document.querySelectorAll('input[name="num_authors"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            var otherField = document.getElementById('other-authors-field');
+            if (this.value === 'other') {
+                otherField.style.display = 'inline-block';
+                otherField.required = true;
+            } else {
+                otherField.style.display = 'none';
+                otherField.required = false;
+            }
+        });
+    });
+
+    // Handle International Author affiliation visibility
+    document.getElementById('intl-yes').addEventListener('change', function() {
+        document.getElementById('intl-affiliation-section').style.display = 'block';
+    });
+    document.getElementById('intl-no').addEventListener('change', function() {
+        document.getElementById('intl-affiliation-section').style.display = 'none';
+    });
+
+    // Handle Membership proof visibility
+    document.getElementById('membership-yes').addEventListener('change', function() {
+        document.getElementById('membership-proof-section').style.display = 'block';
+    });
+    document.getElementById('membership-no').addEventListener('change', function() {
+        document.getElementById('membership-proof-section').style.display = 'none';
+    });
+
+    // Display selected file names
+    function bindFileName(inputId, spanId) {
+        var input = document.getElementById(inputId);
+        var span = document.getElementById(spanId);
+        if (input && span) {
+            input.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    span.innerHTML = '<i class="fas fa-file-check mr-1"></i> ' + this.files[0].name;
+                } else {
+                    span.innerHTML = '';
+                }
+            });
+        }
+    }
+    
+    bindFileName('membership_proof_file', 'membership_proof_name');
+    bindFileName('pdf_copy_file', 'pdf_copy_name');
+    bindFileName('plagiarism_file', 'plagiarism_name');
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- Back Button -->
+    <a href="{% url 'homepage' %}" class="mb-6 w-max px-4 py-2 bg-gray-100 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center gap-2 transition-colors">
+        <i class="fas fa-arrow-left"></i> Back to Home
+    </a>
+
+    <main class="flex-1 flex flex-col items-center justify-center py-12">
+        <div class="bg-white rounded-2xl shadow-xl p-10 max-w-lg w-full text-center">
+            <h1 class="text-3xl font-bold text-blue-700 mb-2">{{ conference.acronym|default:conference.name }}</h1>
+            <p class="text-gray-600 mb-6">Choose your role to proceed in this conference</p>
+            <div class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-left">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-blue-700">Virtual room</p>
+                        <p class="text-sm text-gray-600">Remote participants can enter the live session from here.</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold {% if virtual_room_state == 'live' %}bg-green-100 text-green-800{% elif virtual_room_state == 'closed' %}bg-slate-100 text-slate-700{% else %}bg-amber-100 text-amber-800{% endif %}">
+                        {{ virtual_room_state|title }}
+                    </span>
+                </div>
+                {% if virtual_room_enabled %}
+                    <a href="{% url 'conference:virtual_conference_room' conference.id %}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white shadow hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-video"></i> Join Virtual Room
+                    </a>
+                {% else %}
+                    <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        The room is not live yet.
+                    </div>
+                {% endif %}
+            </div>
+            {% if role_links %}
+                <div class="flex flex-col gap-4 mb-6">
+                    {% for role in role_links %}
+                        <a href="{{ role.url }}" class="w-full py-4 px-6 rounded-lg text-lg font-semibold shadow bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3 transition-colors">
+                            {% if role.role == 'chair' %}<i class="fas fa-crown"></i>{% endif %}
+                            {% if role.role == 'author' %}<i class="fas fa-user-edit"></i>{% endif %}
+                            {% if role.role == 'reviewer' %}<i class="fas fa-user-check"></i>{% endif %}
+                            {{ role.label }}
+                        </a>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'conference:author_papers' conference.id %}" class="w-full py-3 px-6 rounded-lg text-lg font-semibold shadow bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-3 transition-colors">
+                    <i class="fas fa-file-alt"></i> My Papers
+                </a>
+            {% else %}
+                <div class="bg-yellow-100 text-yellow-800 rounded-lg p-4 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>You do not have any roles in this conference.
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // Handle browser back button to redirect to homepage
+        window.addEventListener('popstate', function(event) {
+            window.location.href = "{% url 'homepage' %}";
+        });
+        
+        // Push current state to history so back button works
+        window.history.pushState({}, '', window.location.href);
+    </script>
+{% endblock %} 

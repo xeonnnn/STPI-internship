@@ -1,0 +1,67 @@
+{% load static %}
+{% load conference_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PaperSetu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+      .glass {
+        background: rgba(255,255,255,0.7);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+        backdrop-filter: blur(8px);
+        border-radius: 1.5rem;
+        border: 1px solid rgba(200,220,255,0.18);
+      }
+      .gradient-header {
+        background: linear-gradient(90deg, #e0e7ff 0%, #f0f4ff 100%);
+      }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-white to-indigo-50 min-h-screen text-gray-900">
+    <!-- Main Navigation -->
+    <nav class="gradient-header shadow mb-8 border-b border-blue-100">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <img src="{% static 'images/LOGO BG.png' %}" alt="PaperSetu Logo" class="w-10 h-10 rounded-full shadow bg-white">
+                <span class="text-2xl font-bold text-indigo-800">PaperSetu</span>
+            </div>
+            <ul class="flex items-center gap-8 text-base font-semibold">
+                <li><a href="/" class="hover:text-blue-600 transition">Home</a></li>
+                <li><a href="/conference/" class="hover:text-blue-600 transition">Conferences</a></li>
+                <li><a href="/dashboard/" class="hover:text-blue-600 transition">Dashboard</a></li>
+                <!-- Profile Dropdown -->
+                <li class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors font-semibold">
+                        <i class="fas fa-user-circle text-2xl"></i>
+                        <span>{{ user.get_full_name|default:user.username }}</span>
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                        <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-100 break-all">
+                            {{ user.email }}
+                        </div>
+                        <a href="{% url 'dashboard:settings' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </a>
+                        <a href="/accounts/logout/" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    {% block nav %}{% endblock %}
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="w-full bg-white/80 border-t border-blue-100 py-8 mt-12 text-center text-gray-500 text-sm">
+        &copy; {% now "Y" %} PaperSetu. All rights reserved.
+    </footer>
+</body>
+</html> 

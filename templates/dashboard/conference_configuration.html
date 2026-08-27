@@ -1,0 +1,127 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load dashboard_extras %}
+{% load static %}
+
+{% block content %}
+        <!-- Conference Header -->
+        <section class="bg-white rounded-lg shadow p-6 mb-8">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2 text-blue-700">Conference Configuration</h1>
+                    <p class="text-gray-600 mb-2">{{ conference.name }} ({{ conference.acronym }})</p>
+                    <p class="text-sm text-gray-500">Configure all settings for your conference</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold
+                        {% if conference.status == 'upcoming' %}bg-yellow-100 text-yellow-800
+                        {% elif conference.status == 'live' %}bg-green-100 text-green-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ conference.status|title }}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-8">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg mb-4 {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+<!-- Configuration Table -->
+<section class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-cog text-blue-600 mr-2"></i>
+            Configuration
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Configure conference settings and parameters</p>
+    </div>
+    <div class="px-6 py-4">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Field</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for field in conference_fields %}
+                <tr id="row-{{ field.name }}">
+                    <td class="px-4 py-2 font-semibold">{{ field.verbose_name|capfirst }}</td>
+                    <td class="px-4 py-2" id="value-{{ field.name }}">
+                        <span id="display-{{ field.name }}">{{ conference|attr:field.name }}</span>
+                        <form method="post" class="flex items-center gap-2 inline-edit-form" data-field="{{ field.name }}" id="form-{{ field.name }}" style="display:none;">
+                            {% csrf_token %}
+                            <input type="hidden" name="edit_field" value="{{ field.name }}">
+                            <input type="text" name="new_value" value="{{ conference|attr:field.name }}" class="border rounded px-2 py-1">
+                            <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Save</button>
+                            <button type="button" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 cancel-btn">Cancel</button>
+                        </form>
+                        <div class="text-xs text-red-600 mt-1" id="error-{{ field.name }}"></div>
+                    </td>
+                    <td class="px-4 py-2">
+                        <button class="text-blue-600 hover:underline edit-btn" data-field="{{ field.name }}"><i class="fas fa-edit mr-1"></i>Edit</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<script>
+document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const field = btn.getAttribute('data-field');
+        document.getElementById('display-' + field).style.display = 'none';
+        document.getElementById('form-' + field).style.display = '';
+        btn.style.display = 'none';
+    });
+});
+document.querySelectorAll('.cancel-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = btn.closest('form');
+        const field = form.getAttribute('data-field');
+        form.style.display = 'none';
+        document.getElementById('display-' + field).style.display = '';
+        document.querySelector(`button.edit-btn[data-field='${field}']`).style.display = '';
+        document.getElementById('error-' + field).textContent = '';
+    });
+});
+document.querySelectorAll('.inline-edit-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const field = form.getAttribute('data-field');
+        const formData = new FormData(form);
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('display-' + field).textContent = data.value;
+                document.getElementById('display-' + field).style.display = '';
+                form.style.display = 'none';
+                document.querySelector(`button.edit-btn[data-field='${field}']`).style.display = '';
+                document.getElementById('error-' + field).textContent = '';
+            } else {
+                document.getElementById('error-' + field).textContent = data.error || 'Error saving.';
+            }
+        })
+        .catch(() => {
+            document.getElementById('error-' + field).textContent = 'Error saving.';
+        });
+    });
+});
+</script>
+{% endblock %}

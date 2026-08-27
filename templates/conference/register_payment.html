@@ -1,0 +1,164 @@
+{% extends 'dashboard/dashboard.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-16 flex justify-center">
+  <div style="max-width: 520px; width: 100%;">
+
+    <!-- Confirmation Banner -->
+    <div style="background:#e6f4ea; border-radius:10px; padding:16px 20px; margin-bottom:24px;
+                display:flex; align-items:center; gap:12px; border-left:4px solid #34a853;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="12" fill="#34a853"/>
+        <path d="M7 13l3.5 3.5L17 9" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div style="font-weight:700; color:#137333; font-size:0.95rem;">Registration details saved!</div>
+        <div style="font-size:0.82rem; color:#137333;">Please complete your payment to confirm registration.</div>
+      </div>
+    </div>
+
+    <!-- Order Summary Card -->
+    <div style="background:#fff; border-radius:12px; box-shadow:0 2px 16px rgba(66,133,244,0.10);
+                border-top:6px solid #4285F4; padding:28px 32px; margin-bottom:20px;">
+      <h1 style="font-size:1.3rem; font-weight:700; color:#202124; margin-bottom:20px;">
+        Complete Your Registration Payment
+      </h1>
+
+      <div style="border:1px solid #e8eaed; border-radius:8px; overflow:hidden; margin-bottom:22px;">
+        <div style="background:#f8f9fa; padding:10px 16px; font-size:0.78rem; font-weight:600;
+                    color:#5f6368; text-transform:uppercase; letter-spacing:0.05em;">
+          Registration Summary
+        </div>
+        <div style="padding:0 16px;">
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f3f4;">
+            <span style="color:#5f6368; font-size:0.88rem;">Conference</span>
+            <span style="font-weight:600; color:#202124; font-size:0.88rem; text-align:right; max-width:260px;">
+              7th ICIMMI 2025
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f3f4;">
+            <span style="color:#5f6368; font-size:0.88rem;">Paper ID</span>
+            <span style="font-weight:600; color:#1a73e8; font-family:monospace; font-size:0.88rem;">
+              {{ paper.paper_id }}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f3f4;">
+            <span style="color:#5f6368; font-size:0.88rem;">Paper Title</span>
+            <span style="font-weight:500; color:#202124; font-size:0.88rem; text-align:right; max-width:260px;">
+              {{ paper.title }}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f3f4;">
+            <span style="color:#5f6368; font-size:0.88rem;">Author</span>
+            <span style="font-weight:500; color:#202124; font-size:0.88rem;">
+              {{ registration.name_first_author }}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f1f3f4;">
+            <span style="color:#5f6368; font-size:0.88rem;">Presentation Mode</span>
+            <span style="font-weight:500; color:#202124; font-size:0.88rem;">
+              {{ registration.get_presentation_mode_display }}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0;">
+            <span style="color:#5f6368; font-size:0.88rem;">Publication</span>
+            <span style="font-weight:500; color:#202124; font-size:0.88rem; text-align:right; max-width:280px;">
+              {{ registration.get_publication_choice_display }}
+            </span>
+          </div>
+        </div>
+        <div style="background:#f8f9fa; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-top:2px solid #e8eaed;">
+          <span style="font-weight:700; color:#202124; font-size:0.95rem;">Registration Fee</span>
+          <span style="font-weight:800; color:#34a853; font-size:1.15rem;">₹500</span>
+        </div>
+      </div>
+
+      <!-- Pay Button -->
+      <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      <button id="razorpay-pay-btn"
+              style="width:100%; background:#4285F4; color:#fff; border:none; border-radius:6px;
+                     padding:14px 0; font-size:1rem; font-weight:700; cursor:pointer;
+                     transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <rect width="24" height="24" rx="4" fill="#fff" fill-opacity="0.15"/>
+          <path d="M3 9h18M7 15h2m4 0h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Pay ₹500 &mdash; Complete Registration
+      </button>
+
+      <p style="text-align:center; font-size:0.78rem; color:#5f6368; margin-top:14px;">
+        Secured by Razorpay &nbsp;|&nbsp; UPI, Cards, Netbanking accepted
+      </p>
+    </div>
+
+    <!-- Back link -->
+    <div style="text-align:center;">
+      <a href="{% url 'conference:author_papers' conference.id %}"
+         style="color:#5f6368; font-size:0.85rem; text-decoration:none;">
+        ← Back to My Papers
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('razorpay-pay-btn').onclick = function() {
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Opening payment...';
+
+  fetch("{% url 'conference:create_checkout_session' paper.id %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    }
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.order_id) {
+      var options = {
+        key: data.razorpay_key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: "ICIMMI 2025 – PaperSetu",
+        description: "Conference Registration – " + data.paper_title,
+        order_id: data.order_id,
+        redirect: true,
+        callback_url: data.success_url,
+        cancel_url: data.cancel_url,
+        handler: function(response) {
+          var successUrl = data.success_url +
+            "?razorpay_payment_id=" + response.razorpay_payment_id +
+            "&razorpay_order_id=" + response.razorpay_order_id +
+            "&razorpay_signature=" + response.razorpay_signature;
+          window.location.href = successUrl;
+        },
+        modal: {
+          ondismiss: function() {
+            btn.disabled = false;
+            btn.innerHTML = 'Pay ₹500 &mdash; Complete Registration';
+          }
+        },
+        prefill: {
+          email: "{{ registration.email }}",
+          contact: "{{ registration.mobile }}"
+        },
+        theme: { color: "#4285F4" }
+      };
+      var rzp = new Razorpay(options);
+      rzp.open();
+    } else {
+      alert(data.error || "Error creating payment session. Please try again.");
+      btn.disabled = false;
+      btn.innerHTML = 'Pay ₹500 &mdash; Complete Registration';
+    }
+  })
+  .catch(function() {
+    alert("Network error. Please try again.");
+    btn.disabled = false;
+    btn.innerHTML = 'Pay ₹500 &mdash; Complete Registration';
+  });
+};
+</script>
+{% endblock %}

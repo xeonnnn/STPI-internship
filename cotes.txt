@@ -1,0 +1,193 @@
+================================================================================
+           PAPERSETU / ICIMMI CONFERENCE MANAGEMENT SYSTEM
+            DEEP-DIVE FUNCTION-BY-FUNCTION & MODEL-BY-MODEL GUIDE
+================================================================================
+
+This section explains EVERY major Model and Function in detail:
+- WHY we created it (The problem it solves)
+- WHAT it does step-by-step
+- HOW it works under the hood
+- WHAT to say in your interview tomorrow
+
+================================================================================
+PART 1: DATABASE MODELS EXPLAINED (`conference/models.py`)
+================================================================================
+
+1. `Conference` Model
+---------------------
+- WHY WE MADE IT: Every paper, review, and role belongs to a specific conference event. 
+  We need a central database object to hold conference settings, venue, dates, and deadlines.
+- KEY FIELDS:
+  * `name`, `acronym` (e.g. ICIMMI-2026)
+  * `chair` (ForeignKey to User - who owns/manages this conference)
+  * `start_date`, `end_date`, `paper_submission_deadline`
+  * `is_approved` (Boolean - requires platform admin approval before going live)
+  * `blind_review` (Boolean toggle for double-blind vs single-blind review)
+  * `invite_link` (Unique 32-char token string for direct conference joining)
+- INTERVIEW TIP: "The Conference model acts as the root container for all tracks, 
+  submissions, reviewers, and configuration settings in our system."
+
+2. `Paper` Model
+----------------
+- WHY WE MADE IT: To store academic paper submissions uploaded by authors.
+- KEY FIELDS:
+  * `title`, `abstract`, `file` (FileField storing PDF/DOCX path in media folder)
+  * `author` (ForeignKey to User who submitted)
+  * `conference` (ForeignKey to Conference)
+  * `paper_id` (Unique auto-generated identifier like CONF2601)
+  * `status` ('submitted', 'under_review', 'pending', 'accepted', 'rejected')
+  * `is_paid` (Boolean - True when registration payment is complete)
+  * `stripe_session_id` / `order_id` (Stores payment gateway order ID)
+- METHOD `save()`: Overridden to automatically compute unique `paper_id` based on 
+  conference acronym, year, and submission serial count.
+- INTERVIEW TIP: "The Paper model tracks the lifecycle of a submission from initial 
+  draft to peer review, chair decision, registration, and final payment."
+
+3. `UserConferenceRole` Model
+-----------------------------
+- WHY WE MADE IT: A single user can have different roles across different conferences 
+  (e.g., Chair in Conference A, Author in Conference B, Reviewer in Conference C).
+- KEY FIELDS: `user`, `conference`, `role` ('chair', 'author', 'reviewer', 'pc_member', 'subreviewer')
+- META CONSTRAINT: `unique_together = ('user', 'conference', 'role')` ensures no duplicate role entries.
+- INTERVIEW TIP: "We implemented role-based access control per conference using the 
+  UserConferenceRole model, which maps users to roles dynamically for each conference."
+
+4. `Review` Model
+-----------------
+- WHY WE MADE IT: Stores peer review evaluations submitted by assigned reviewers/subreviewers.
+- KEY FIELDS:
+  * `paper` (ForeignKey to Paper), `reviewer` (ForeignKey to User)
+  * `rating` (Integer scale from -3 Strong Reject to +3 Strong Accept)
+  * `confidence` (Integer scale 1 to 5)
+  * `recommendation` ('accept', 'reject', 'borderline')
+  * `comments` (Public feedback shared with authors)
+  * `remarks` (Private feedback visible only to PC members & Chair)
+- INTERVIEW TIP: "The Review model separates public author feedback from confidential 
+  PC committee remarks and records numeric ratings and confidence scores for paper scoring."
+
+5. `ConferenceRegistration` Model
+---------------------------------
+- WHY WE MADE IT: ICIMMI requires structured registration data and file proofs 
+  (revised paper, plagiarism report, membership proof) BEFORE author payment.
+- KEY FIELDS:
+  * `paper` (OneToOneField to Paper)
+  * `mobile` (WhatsApp number)
+  * `num_authors`, `name_first_author`, `affiliation_first_author`
+  * `presentation_mode` ('online' vs 'offline')
+  * `publication_choice` ('acm' vs 'taru')
+  * Uploaded FileFields: `revised_paper`, `pdf_copy`, `plagiarism_report`, `membership_proof`
+- INTERVIEW TIP: "We implemented a two-step registration flow: first capturing compliance 
+  documents via ConferenceRegistration, then proceeding to fee payment."
+
+6. `SubreviewerInvite` Model
+----------------------------
+- WHY WE MADE IT: PC members often delegate specific reviews to external subreviewers.
+- KEY FIELDS: `paper`, `subreviewer`, `invited_by`, `status` ('invited', 'accepted', 'declined'), `token`.
+- INTERVIEW TIP: "This model manages the subreviewer delegation workflow, tracking invitation 
+  status and timestamps."
+
+================================================================================
+PART 2: VIEW FUNCTIONS EXPLAINED (`conference/views.py`)
+================================================================================
+
+1. `submit_paper(request, conference_id)`
+-----------------------------------------
+- WHY WE CREATED IT: To handle the form submission when an author submits a new paper.
+- HOW IT WORKS:
+  1. Retrieves conference using `get_object_or_404(Conference, id=conference_id)`.
+  2. If POST request, validates `PaperSubmissionForm` (title, abstract, PDF file).
+  3. Attaches logged-in `request.user` as author and assigns current timestamp.
+  4. Saves `Paper` model (triggering `paper_id` auto-generation).
+  5. Grants author role in `UserConferenceRole`.
+  6. Sends confirmation emails to corresponding author and conference chair using `send_paper_submission_emails()`.
+  7. Redirects user to dashboard with success message.
+
+2. `conference_register(request, paper_id)`
+-------------------------------------------
+- WHY WE CREATED IT: Displays and processes the mandatory ICIMMI registration form.
+- HOW IT WORKS:
+  1. Checks if paper belongs to `request.user` and has `status == 'accepted'`.
+  2. If registration already exists, redirects straight to `register_payment`.
+  3. On POST, reads form fields (`email`, `mobile`, `presentation_mode`, `publication_choice`) 
+     and handles uploaded files (`revised_paper`, `plagiarism_report`, `membership_proof`).
+  4. Saves `ConferenceRegistration` model and redirects to payment step.
+
+3. `create_checkout_session(request, paper_id)`
+------------------------------------------------
+- WHY WE CREATED IT: Backend API endpoint for initiating Razorpay payment.
+- HOW IT WORKS:
+  1. Fetches paper and verifies `paper.status == 'accepted'` and `not paper.is_paid`.
+  2. Prepares `order_data` (amount in paise, currency INR, receipt ID).
+  3. Calls `razorpay_client.order.create(data=order_data)`.
+  4. Saves Razorpay order ID into `paper.stripe_session_id`.
+  5. Returns JSON response with `order_id`, `razorpay_key_id`, and callback URLs.
+
+4. `payment_success(request, paper_id)`
+---------------------------------------
+- WHY WE CREATED IT: Secure payment callback endpoint to verify transaction completion.
+- HOW IT WORKS:
+  1. Receives `razorpay_payment_id`, `razorpay_order_id`, and `razorpay_signature`.
+  2. Uses `razorpay_client.utility.verify_payment_signature(...)` to cryptographically 
+     verify signature against Razorpay secret key.
+  3. If signature is valid, sets `paper.is_paid = True` and saves paper.
+  4. Renders `payment_success.html` confirmation page.
+
+5. `subreviewer_dashboard(request, conference_id)`
+--------------------------------------------------
+- WHY WE CREATED IT: Dedicated portal for subreviewers to view assigned papers and review requests.
+- HOW IT WORKS:
+  1. Queries `SubreviewerInvite` records where `subreviewer == request.user`.
+  2. Computes status flags (`can_answer`, `can_review`, `review_status`).
+  3. Filters by selected track if track filter is applied.
+  4. Renders `subreviewer_dashboard.html`.
+
+6. `subreviewer_review_form(request, invite_id)`
+------------------------------------------------
+- WHY WE CREATED IT: Form for subreviewers to submit ratings (-3 to +3), comments, and remarks.
+- HOW IT WORKS:
+  1. Verifies subreviewer invite is accepted and no duplicate review exists.
+  2. On POST, processes `SubreviewerReviewForm`.
+  3. Maps numeric rating to recommendation ('accept' for >0, 'reject' for <0).
+  4. Creates `Review` record with recommendation (leaves final decision for Chair).
+  5. Creates in-app `Notification` and sends real email to Conference Chair.
+
+7. `conferences_list(request)`
+------------------------------
+- WHY WE CREATED IT: Browsable directory of all active conferences with search filters.
+- HOW IT WORKS:
+  1. Fetches all approved upcoming/live conferences.
+  2. If search query is provided, uses `fuzzywuzzy` library for partial string/fuzzy matching 
+     across conference names, domains, venues, and research primary/secondary areas.
+  3. Attaches logged-in user's roles to each conference card.
+  4. Renders `conferences_list.html`.
+
+8. `create_conference(request)`
+-------------------------------
+- WHY WE CREATED IT: Allows conference organizers to apply to host a conference on PaperSetu.
+- HOW IT WORKS:
+  1. On POST, validates `ConferenceForm`.
+  2. Assigns `request.user` as chair and sets `is_approved = False`.
+  3. Generates unique random string for `invite_link`.
+  4. Creates `UserConferenceRole(role='chair')`.
+  5. Sends pending request notification email to platform superusers.
+
+================================================================================
+PART 3: SUMMARY OF KEY TECHNICAL DESIGN DECISIONS (WHY WE DID IT THIS WAY)
+================================================================================
+1. Why Razorpay signature verification?
+   - To prevent fraud/tampering. Anyone could try calling the success URL manually, 
+     so verifying HMAC-SHA256 signature guarantees the payment was truly processed by Razorpay.
+
+2. Why separate `Review` recommendation vs final decision?
+   - Subreviewers provide expert recommendations, but only the Conference Chair has authority 
+     to issue official Acceptance/Rejection decisions.
+
+3. Why double-step Registration (Form then Payment)?
+   - Ensures authors upload required camera-ready PDFs and plagiarism reports before paying fees, 
+     preventing incomplete registrations.
+
+4. Why custom `paper_id` generator in `Paper.save()`?
+   - Human-readable paper IDs like `ICIMMI2601` are far easier to reference in physical conference 
+     proceedings than database integers like `42`.
+
+================================================================================
